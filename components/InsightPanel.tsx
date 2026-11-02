@@ -360,7 +360,7 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
   if (apiMissing) {
     return <section className="insight-panel insight-panel-unavailable">
       <h2>命理解读</h2>
-      <p>本地版本暂未配置 AI 解读服务。命盘、运限四化和宫位详情均可正常查看。</p>
+      <p>本地版本暂未配置 AI 解读服务。命盘、行限宫位和宫位详情均可正常查看。</p>
     </section>;
   }
 

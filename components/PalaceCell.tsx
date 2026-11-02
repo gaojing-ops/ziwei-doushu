@@ -11,6 +11,7 @@ interface PalaceCellProps {
   isSelected?: boolean;
   isSanFang?: boolean;
   delay?: number;
+  fortuneLabel?: string;
   overlayStarSiHua?: Record<string, string>;
   overlayLabel?: string;
   onSiHuaClick?: (starName: string, siHua: string) => void;
@@ -35,7 +36,7 @@ function SiHuaBadge({ siHua, overlay, label, onClick }: {
 }
 
 export default function PalaceCell({
-  palace, onClick, onStarClick, isSelected, isSanFang, delay = 0,
+  palace, onClick, onStarClick, isSelected, isSanFang, delay = 0, fortuneLabel,
   overlayStarSiHua, overlayLabel, onSiHuaClick,
 }: PalaceCellProps) {
   const { branch, stem, name, stars, daXianAge, isCurrentDaXian, isMingGong, isShenGong } = palace;
@@ -87,6 +88,7 @@ export default function PalaceCell({
         {isShenGong && <span className="palace-marker palace-body-marker">身</span>}
       </div>
       <div className="palace-age">{daXianAge ? `${daXianAge[0]}–${daXianAge[1]}岁` : '—'}</div>
+      {fortuneLabel && <div className="palace-fortune-marker">{fortuneLabel}</div>}
       <div className="palace-ganzhi">{ganzhi}</div>
       <div className="palace-major-stars">
         {majorStars.length ? majorStars.map(renderStar) : <span className="palace-empty">空宫</span>}

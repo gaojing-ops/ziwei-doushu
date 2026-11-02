@@ -53,6 +53,9 @@ export type LeapMonth =
   | 'prev-month'    // 整月当本月普通月（闰四月当四月）— 可选口径「视为本月」；早先 2.6 万盘验证针对的是另一套参照引擎，与金标准盘默认口径不一致
   | 'origin-month'; // 不调整（闰四月仍标闰月，iztro fixLeap=false）
 
+// 本衍生版自 1.2 使用午夜换日、闰月归下月；下方旧流派迁移说明为上游历史，
+// 不作为本次课程验收的依据。
+
 // ─── 完整配置对象 ──────────────────────────────────────────────────────
 
 export interface SchoolConfig {
@@ -74,7 +77,7 @@ export interface SchoolConfig {
  * 唯一系统性差异是 9 张闰月后半月盘——金标准盘默认「月中分界」(split)，Metis 旧默认整月归本月；切 split 后逐星全同。
  * 站长 2026-09-05 拍板改默认。algorithm / school-patches / yunxian-palace 的兜底默认都引用这一个常量，别再各写字面量。
  */
-export const DEFAULT_LEAP_MONTH: LeapMonth = 'split';
+export const DEFAULT_LEAP_MONTH: LeapMonth = 'next-month';
 
 export const SCHOOL_DEFAULT_CONFIG: SchoolConfig = {
   brightnessSchool: 'default',           // = 《斗数全书》（algorithm.ts 把 'default' 当 QS 用，对齐主流排盘默认口径，10-20 改）
@@ -85,8 +88,8 @@ export const SCHOOL_DEFAULT_CONFIG: SchoolConfig = {
   kuiyueSchool: 'qs1',                   // 斗数全书歌诀理解1
   tianshiTianshang: 'normal',            // 常规
   changshengSchool: 'yin-yang-shun-ni',  // 区分阴阳顺逆
-  lateZishi: 'next-day',                 // 视为次日
-  leapMonth: DEFAULT_LEAP_MONTH,         // 闰月分半（主流排盘默认口径「月中分界」，150 组金标准盘对照验证）
+  lateZishi: 'current-day',              // 《天纪》4上 00:30:41，午夜换日
+  leapMonth: DEFAULT_LEAP_MONTH,         // 本衍生版按《天纪》4上整月归下月
 };
 
 // ─── localStorage 持久化 key ───────────────────────────────────────────

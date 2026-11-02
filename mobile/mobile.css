@@ -33,3 +33,8 @@ body { margin: 0; padding-top: env(safe-area-inset-top, 0px); }
 .ai-error { color: var(--ji); margin: 12px 0; }
 [data-theme="dark"] .ai-error { color: #ffaaa1; }
 .ai-stop { width: 100%; }
+/* Course evidence stays readable on narrow Android screens. */
+.teaching-evidence { margin-top: 12px; padding: 8px; border: 1px solid var(--bdr-med); border-radius: 8px; overflow-wrap: anywhere; }
+.teaching-evidence summary { min-height: 44px; cursor: pointer; }
+.teaching-evidence > div { margin: 12px 0; }
+.teaching-evidence a { display: inline-block; min-height: 44px; color: var(--ac); }

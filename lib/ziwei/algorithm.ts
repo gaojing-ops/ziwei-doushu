@@ -138,7 +138,7 @@ export function resolveEffectiveLunarDate(
   year: number,
   month: number,
   day: number,
-  policy: LunarMonthPolicy = 'prev-month',
+  policy: LunarMonthPolicy = DEFAULT_LEAP_MONTH,
 ): EffectiveLunarDate {
   const lunar = Solar.fromYmd(year, month, day).getLunar();
   const rawLunarMonth = Number(lunar.getMonth());
@@ -199,7 +199,7 @@ export function getLunarInfo(
   month: number,
   day: number,
   hour?: number,
-  policy: LunarMonthPolicy = 'prev-month',
+  policy: LunarMonthPolicy = DEFAULT_LEAP_MONTH,
 ): LunarInfo {
   const solar = Solar.fromYmd(year, month, day);
   const lunar = solar.getLunar();
@@ -363,7 +363,8 @@ function relocateStar(palaces: Palace[], name: string, targetBranch: number): vo
 function applySchoolKuiyue(palaces: Palace[], yearStemCn: string): void {
   const gan = STEMS.indexOf(yearStemCn); // 甲=0 … 癸=9
   if (gan < 0) return;
-  const row = SCHOOL_AX.KY_ARR1[gan + 1]; // KY 表「甲=1」起;子起一编码
+  // 《天纪》5上 00:08:30：辛丑女命午宫贪狼同天魁；辛年魁午、钺寅。
+  const row = gan === 7 ? [7, 3] : SCHOOL_AX.KY_ARR1[gan + 1]; // 子起一编码
   if (!row) return;
   relocateStar(palaces, '天魁', row[0] - 1); // 子起一(子=1) → BRANCHES 索引(子=0)
   relocateStar(palaces, '天钺', row[1] - 1);
@@ -465,6 +466,9 @@ export function generateChart(
   // 非 split 时先算农历，闰月才切 byLunar；非闰月仍走 bySolar，与 split 行为完全一致
   const leapMode = opts?.leapMonth ?? DEFAULT_LEAP_MONTH;
   const effectiveLunar = resolveEffectiveLunarDate(year, month, day, leapMode);
+  if (leapMode === 'next-month' && effectiveLunar.rawLunarDay !== effectiveLunar.lunarDay) {
+    throw new RangeError('此日期为闰月三十、归入的下月只有二十九天；课程依据不足，暂不静默改成二十九日排盘。请保留原始生日核对课程安星表。');
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let astrolabe: any;

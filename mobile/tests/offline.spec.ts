@@ -16,12 +16,12 @@ test('packaged assets calculate without a network and preserve theme locally', a
   await page.getByLabel('出生小时', { exact: true }).selectOption('23');
   await page.getByLabel('出生分钟', { exact: true }).selectOption('30');
   await page.getByRole('button', { name: /立即起盘/ }).tap();
-  await expect(page.getByText(/出生输入：2000-01-31 23:30 → 排盘日期：2000-02-01/)).toBeVisible();
+  await expect(page.getByText(/出生输入：2000-01-31 23:30 → 排盘日期：2000-01-31/)).toBeVisible();
   await expect(page.getByRole('button', { name: '命宫 丁丑', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '流年', exact: true }).tap();
-  await expect(page.getByLabel(/^流年化/)).toHaveCount(4);
+  await expect(page.getByLabel(/^流年化/)).toHaveCount(0);
   await page.getByRole('button', { name: '命宫 丁丑', exact: true }).tap();
-  await expect(page.getByRole('region', { name: '宫位详情' })).toContainText('天机');
+  await expect(page.getByRole('region', { name: '宫位详情' })).toContainText('紫微');
   await expect(page.getByRole('heading', { name: 'DeepSeek 解读' })).toBeVisible();
   await page.getByRole('button', { name: '切换主题' }).tap();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');

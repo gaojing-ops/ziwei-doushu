@@ -7,6 +7,8 @@ const seen = new Set();
 const sections = [
   '紫微命盘 · 离线自用版\nUpstream: https://github.com/Renhuai123/ziwei-doushu',
   fs.readFileSync(path.join(root, 'LICENSE'), 'utf8'),
+  '倪海厦《天纪》教学短引文：来源 Renhuai123/nihai-tianji-corpus（462faa4）及本仓库 docs/tianji-ziwei/。新增本地检索索引，排除存疑和勘误条目；仅供非商业学习研究，不表示官方认可。',
+  fs.readFileSync(path.join(root, 'docs/tianji-ziwei/LICENSE.md'), 'utf8'),
 ];
 function collect(name) {
   if (seen.has(name)) return;

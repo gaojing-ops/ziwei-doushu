@@ -5,28 +5,31 @@
 
 基于 **[Renhuai123/ziwei-doushu](https://github.com/Renhuai123/ziwei-doushu)** 的非官方个人测试版，由 [gaojing-ops](https://github.com/gaojing-ops) 发布。原作者标注为**王多鱼AI**，原代码版权为 **2026 紫微研究**。保留上游 Git 历史、版权和 MIT 许可；新增修改的代码沿用 MIT。详细见 [来源与许可](ATTRIBUTION.md)。本版本与上游、OURANIC、课程作者和 DeepSeek 均无官方关联。
 
-**[下载 Android 1.1 APK](https://github.com/gaojing-ops/ziwei-doushu/releases/tag/android-v1.1)** · [安装、隐私与构建说明](docs/android-app.md) · [上游原始说明](README.upstream.md)
+**[下载 Android 1.2 APK](https://github.com/gaojing-ops/ziwei-doushu/releases/tag/android-v1.2)** · [安装、隐私与构建说明](docs/android-app.md) · [上游原始说明](README.upstream.md)
 
 ## 能做什么
 
 - 离线排盘：页面和算法内置 APK，无需电脑服务；支持深浅主题、宫位大字详情。
-- 时间修复：统一预览、直接起盘与分享还原，处理真太阳时跨日和子时换日。
-- 运限切换：统一视图与年份状态，展示本命／大限／流年四化。
+- 时间修复：统一预览、直接起盘与分享还原，采用课程的午夜换日、闰月归下月；真太阳时由用户选择，不默认改时。
+- 运限切换：固定生年四化，标出所选年份的十年大限及男顺女逆小流年；本命／大限看三方四正，小流年看本宫和对宫。
 - 安卓布局：适配 320 像素起的窄屏、横屏与触控操作。
-- 可选 DeepSeek 解读：用户自己在手机填 API Key，支持流式回答、追问、停止和固定错误提示。保存设置不发起付费调用，不自动重试。
+- 可选 DeepSeek 解读：用户自己在手机填 API Key，支持流式回答、追问、停止和固定错误提示。保存设置不发起付费调用，不自动重试。离线检索课程短引文，回答须引用本次教学编号，缺失或伪造编号会提示。
 
 ## 安装与使用
 
-1. 在 [Release](https://github.com/gaojing-ops/ziwei-doushu/releases/tag/android-v1.1) 下载 `Ziwei-DeepSeek-1.1.apk`，适用于 Android 7.0 及以上，需正常更新的 Android System WebView。
-2. APK 为调试签名的个人测试构建，与此前交付的 1.0 签名相同，可覆盖安装；不含自动更新或应用商店分发。
+1. 在 [Release](https://github.com/gaojing-ops/ziwei-doushu/releases/tag/android-v1.2) 下载 `Ziwei-DeepSeek-1.2.apk`，适用于 Android 7.0 及以上，需正常更新的 Android System WebView。
+2. APK 为调试签名的个人测试构建，与此前交付的 1.0/1.1 签名相同，可覆盖安装；不含自动更新或应用商店分发。
 3. 需要 AI 时，打开“DeepSeek 设置”，填入自己的 Key，阅读并勾选发送及计费说明后保存。起盘后主动点击“开始解读”。排盘本身不需要 Key。
 
 API Key 经 Android Keystore 加密后保存于应用私有存储，不写入源码或 APK，也不提交到项目服务器。仅在用户主动发送时直连 DeepSeek 官方接口，按用户自己的账户计费。自动发送内容为命盘结构、性别、虚岁、所选运限和问题，不自动发送姓名、出生日期、地点、经度或原始时间；手动写入问题的个人资料仍会随问题发送。聊天仅保留于本次界面，切换盘面上下文会清空。
 
 ## 范围与偏差
 
-目前的运限为**本命十二宫加所选四化叠加，不是完整重排流年十二宫**。真太阳时采用现有近似算法，按北京时间输入；历史夏令时需用户先确认标准时间。时辰边界、输入准确性和不同流派规则均可能影响结果。
+当前采用 [倪师教学口径与课程案例核对](docs/ni-school-audit.md)：午夜换日、闰月整月归下月、生年四化固定、辛年天魁午／天钺寅，并用所选年份对应的大限及小流年行宫解读。保留本命宫名，不增加宫干或年干四化。时辰不详仅按子时试排并明确提示。
 
+出生时间仍按北京时间输入，历史夏令时须自行确认标准时间，真太阳时默认关闭。闰月三十归入只有二十九天的下月时，缺少明确课程处理依据，本版会提示无法排盘，避免静默改成二十九日。亮度表及尚无课程直接证据的辅杂星沿用上游《全书》表，未宣称全部星曜和全部课程案例已核验。
+
+AI 从 1815 条去重、排除存疑／勘误后的课程短引文中，每次本地检索最多 8 条附上出处，不发送整套语料。编号检查仅检查引用是否属于本次材料，不能自动证明解释语义正确。本 APK 包含 CC BY-NC-SA 4.0 课程整理材料，**仅供非商业学习研究**；代码本身仍采用 MIT。
 传统命理内容仅供文化学习与参考，缺乏可靠的科学预测验证。DeepSeek 可能遗漏条件或生成错误解释；回答不代表已核验的古籍、课程引文或专业建议，程序测试通过也不意味着预测准确。
 
 安卓版的 DeepSeek 功能是本次新增的**原生插件**。原有 Next.js 网站后端 `/api/interpret` 等接口仍未包含，浏览器预览不能配置或调用安卓密钥。
@@ -38,6 +41,7 @@ npm ci
 npm run typecheck
 npm test
 npm run test:ai
+npm run test:ni
 npm run build
 npx playwright install chromium
 npm run test:e2e
@@ -47,7 +51,7 @@ npm run mobile:test
 
 网页版开发：`npm run dev`；安卓版浏览器预览：先 `npm run mobile:build`，再 `npm run mobile:preview`。安卓构建需要 JDK 21、Android SDK 及用户接受相应 SDK 许可，随后运行 `npm run android:build`；详细环境要求见 [构建说明](docs/android-app.md)。第三方构建默认会使用自己的调试签名，无法覆盖本 Release，除非持有相同签名密钥；签名私钥不公开。
 
-本地已通过类型检查、生产构建、排盘与时间回归、12 项网页版交互／响应式测试、9 项移动浏览器场景、3 项原生 SSE 解析测试，以及 APK 签名、权限和资源一致性校验。移动场景使用模拟接口；**未使用真实 DeepSeek Key 调用，也未在实体手机验证**。详细记录见 [修复记录](docs/local-fixes.md)、[安卓验证](docs/android-app.md) 及 Release 附件。
+本地已通过类型检查、生产构建、排盘与时间回归、14 项网页版交互／响应式测试、11 项移动浏览器场景、3 项原生 SSE 解析测试，以及 APK 签名、权限和资源一致性校验。移动场景使用模拟接口；**未使用真实 DeepSeek Key 调用，也未在实体手机验证**。另有 3 个课程案例的有限断言、闰月与午夜边界、行限及引用检索回归。完整覆盖范围见 [教学核对记录](docs/ni-school-audit.md)。详细记录见 [修复记录](docs/local-fixes.md)、[安卓验证](docs/android-app.md) 及 Release 附件。
 
 ## 来源与许可
 

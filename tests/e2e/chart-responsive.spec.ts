@@ -79,13 +79,13 @@ for (const size of sizes) {
       expect(arrowSize!.height).toBeGreaterThanOrEqual(44);
       if (size.mobile) await arrow.tap();
       else await arrow.click();
-      await expect(nav).toContainText('2027·丁年四化');
-      await expect(page.getByLabel(/^流年化/)).toHaveCount(4);
-      const mingStar = page.getByRole('button', { name: '命宫 丁丑', exact: true }).getByText('天机', { exact: true });
+      await expect(nav).toContainText('2027 农历流年');
+      await expect(page.getByLabel(/^流年化/)).toHaveCount(0);
+      const mingStar = page.getByRole('button', { name: '命宫 丁丑', exact: true }).locator('.palace-star-name').first();
       if (size.mobile) await mingStar.tap();
       else await mingStar.click();
       const detail = page.getByRole('region', { name: '宫位详情' });
-      await expect(detail).toContainText('天机');
+      await expect(detail).toContainText((await mingStar.textContent())!);
       await expect(detail.getByRole('heading')).toContainText('命宫');
       expect(errors).toEqual([]);
       await page.evaluate(() => window.scrollTo(0, 0));

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DeepSeek, EMPTY_SETTINGS, MODELS, aiError, nativeAiAvailable, type AiMessage, type AiSettings } from './native';
 import { requestMessages, type ChartAiContext } from './prompt';
+import { retrieveTeaching, evidenceWarning, type TeachingEvidence } from './teaching';
 
 export function useAiSettings() {
   const [settings, setSettings] = useState<AiSettings>(EMPTY_SETTINGS);
@@ -59,14 +60,14 @@ export function DeepSeekSettings({ settings, onSaved, onClose }: {
   </section>;
 }
 
-interface Turn { role: 'user' | 'assistant'; content: string; complete: boolean }
+interface Turn { role: 'user' | 'assistant'; content: string; complete: boolean; evidence?: TeachingEvidence[]; warning?: string }
 const TOPICS = [
   { key: 'overview', label: '命格总览', question: '请解读本次视图的命盘总体特征，列出主要依据与不确定处。' },
   { key: 'personality', label: '性格', question: '请结合命宫及三方四正解读性格倾向，避免绝对判断。' },
   { key: 'career', label: '事业', question: '请结合官禄、财帛和迁移宫解释传统事业倾向与一般生活建议。' },
   { key: 'wealth', label: '财运', question: '请解释财帛、田宅及相关四化的传统含义，不给投资买卖指令。' },
   { key: 'love', label: '感情', question: '请解释夫妻宫与相关星曜的传统含义，不断言关系结果或具体发生时间。' },
-  { key: 'palace', label: '所选宫位', question: '请重点解释 focusPalace 所选宫位，区分本命事实和运限叠加的影响。' },
+  { key: 'palace', label: '所选宫位', question: '请重点解释 focusPalace 所选宫位，结合本命固定星曜与所选行限，不增加四化。' },
 ];
 function Answer({ text }: { text: string }) {
   return <div className="ai-answer">{text.split('\n').map((line, index) => <p key={index}>
@@ -98,7 +99,8 @@ export function DeepSeekPanel({ context, settings, onSettings }: { context: Char
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     request.current = id; stopping.current = false; setBusy(true); setError(''); setNotice('');
     const history = restart ? [] : turns.filter(turn => turn.complete).slice(-8);
-    const pending: Turn[] = [...history, { role: 'user', content: text, complete: false }, { role: 'assistant', content: '', complete: false }];
+    const evidence = retrieveTeaching(context, text);
+    const pending: Turn[] = [...history, { role: 'user', content: text, complete: false }, { role: 'assistant', content: '', complete: false, evidence }];
     setTurns(pending); setQuestion('');
     let listener: Awaited<ReturnType<typeof DeepSeek.addListener>> | undefined;
     let partial = '';
@@ -106,14 +108,15 @@ export function DeepSeekPanel({ context, settings, onSettings }: { context: Char
       listener = await DeepSeek.addListener('deepseekChunk', chunk => {
         if (!mounted.current || request.current !== id || chunk.requestId !== id || stopping.current) return;
         partial += chunk.text;
-        setTurns([...pending.slice(0, -1), { role: 'assistant', content: partial, complete: false }]);
+        setTurns([...pending.slice(0, -1), { role: 'assistant', content: partial, complete: false, evidence }]);
       });
       if (!mounted.current || request.current !== id) return;
       if (stopping.current) throw { code: 'CANCELLED' };
       const result = await DeepSeek.interpret({ requestId: id, messages: requestMessages(context, history as AiMessage[], text) });
       if (!mounted.current || request.current !== id) return;
       if (stopping.current) throw { code: 'CANCELLED' };
-      setTurns([...history, { role: 'user', content: text, complete: true }, { role: 'assistant', content: result.text, complete: true }]);
+      const warning = evidenceWarning(result.text, evidence);
+      setTurns([...history, { role: 'user', content: text, complete: !warning }, { role: 'assistant', content: result.text, complete: !warning, evidence, warning }]);
       setNotice(result.finishReason === 'length' ? '回答达到长度上限，可能不完整；可缩小问题范围后继续追问。'
         : result.completionTokens !== undefined ? `本次输出 ${result.completionTokens} tokens` : '解读完成');
     } catch (error) {
@@ -128,10 +131,11 @@ export function DeepSeekPanel({ context, settings, onSettings }: { context: Char
     stopping.current = true; setNotice('正在停止…');
     await DeepSeek.cancel({ requestId: request.current }).catch(() => {});
   }
-  const label = context.view === 'mingpan' ? '本命' : context.view === 'daxian' ? '当前大限四化' : `${context.liunianYear} 流年四化`;
+  const label = context.view === 'mingpan' ? '本命' : context.view === 'daxian' ? `${context.liunianYear} 所属大限` : `${context.liunianYear} 小流年`;
   return <section className="deepseek-panel" aria-label="DeepSeek 解读">
     <div className="ai-section-heading"><h2>DeepSeek 解读</h2><button onClick={onSettings}>设置</button></div>
     <p className="ai-context">{label}{context.selectedPalace ? ` · ${context.selectedPalace.name}` : ''} · {settings.model}</p>
+    <p className="ai-help">倪师课程口径 · 本地检索教学短引文，回答须带教学编号。缺少依据时明确说明；编号可追溯不代表判断准确。</p>
     <p className="ai-help">排盘可离线；AI 需要联网。仅主动发送时将必要命盘和问题交给 DeepSeek，按 API 用量计费。切换年份、视图或宫位会清空对话。</p>
     {!settings.configured && <p>尚未配置 API Key。<button className="ai-inline-action" onClick={onSettings}>设置 DeepSeek</button></p>}
     <div className="ai-controls"><label>解读主题<select aria-label="解读主题" value={topic} disabled={busy} onChange={event => setTopic(event.target.value)}>
@@ -142,6 +146,12 @@ export function DeepSeekPanel({ context, settings, onSettings }: { context: Char
       {turns.map((turn, index) => <article key={index} className={`ai-turn ai-turn-${turn.role}`}>
         <small>{turn.role === 'user' ? '你的问题' : 'DeepSeek'}{turn.role === 'assistant' && !turn.complete ? ' · 未完成' : ''}</small>
         <Answer text={turn.content || '正在等待回答…'} />
+        {turn.warning && <p role="alert" className="ai-error">{turn.warning}</p>}
+        {turn.evidence && <details className="teaching-evidence"><summary>本次教学依据（{turn.evidence.length} 条）</summary>
+          {turn.evidence.map(e => <div key={e.id}><p><strong>[{e.id}] {e.title}</strong></p><p>{e.quote}</p>
+            <a href={e.url} target="_blank" rel="noreferrer">原课程 P{e.part} · {e.time}</a></div>)}
+          <p>来源：Renhuai123/nihai-tianji-corpus（462faa4）及上游整理；CC BY-NC-SA 4.0，仅非商业学习研究。</p>
+        </details>}
       </article>)}
     </div>
     {error && <p role="alert" className="ai-error">{error}</p>}

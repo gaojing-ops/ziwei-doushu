@@ -16,6 +16,7 @@ export interface BirthFormState {
   clockHour: string;
   clockMinute: string;
   unknownTime: boolean;
+  useTrueSolarTime?: boolean;
   province: string;
   city: string;
   longitude: number;
@@ -45,6 +46,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
     clockHour: initialData?.clockHour ?? '8',
     clockMinute: initialData?.clockMinute ?? '0',
     unknownTime: initialData?.unknownTime ?? false,
+    useTrueSolarTime: initialData?.useTrueSolarTime ?? false,
     province: initialData?.province ?? '',
     city: initialData?.city ?? '',
     longitude: initialData?.longitude ?? 120,
@@ -53,9 +55,11 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [engineError, setEngineError] = useState('');
 
   // 表单状态变化时实时同步给父级（合盘等场景下父级靠这个收集双方数据）
   useEffect(() => {
+    setEngineError('');
     onFormSave?.({ ...form });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
@@ -131,7 +135,8 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
     setTouched({ year: true, month: true, day: true });
     if (hasError) return;
     onFormSave?.({ ...form });
-    onSubmit(formToBirthInfo(form));
+    try { onSubmit(formToBirthInfo(form)); }
+    catch (error) { setEngineError(error instanceof Error ? error.message : '当前规则无法完成排盘，请核对输入。'); }
   };
 
   // ─── 样式变量 ────────────────────────────────────────────
@@ -328,10 +333,15 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
               exit={{ opacity: 0 }}
               style={{ fontSize: '10px', color: isDark ? 'rgba(165,185,210,0.7)' : 'rgba(140,100,20,0.45)', marginTop: '5px' }}
             >
-              * 倪海厦批命用真太阳时，建议填写出生地以自动校正时辰
+              出生地为选填；默认不改钟表时间。课程未核定真太阳时要求。
             </motion.p>
           )}
         </AnimatePresence>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 44, fontSize: 13, color: inputClr }}>
+          <input type="checkbox" checked={!!form.useTrueSolarTime} disabled={!form.province}
+            onChange={event => setForm({ ...form, useTrueSolarTime: event.target.checked })} />
+          启用真太阳时校正（可选，需先选出生地）
+        </label>
         <FieldError msg={errors.location} />
       </div>
 
@@ -380,7 +390,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
             {showSummary && !form.unknownTime && (() => {
               const info = formToBirthInfo(form);
               return <div style={{ fontSize: '11px', marginTop: 6, color: goldText }}>
-                排盘日期：{info.year}-{String(info.month).padStart(2, '0')}-{String(info.day).padStart(2, '0')}（晚子时按次日）
+                排盘日期：{info.year}-{String(info.month).padStart(2, '0')}-{String(info.day).padStart(2, '0')}（倪师口径：午夜换日）
               </div>;
             })()}
           </div>
@@ -434,6 +444,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
       </div>
 
       {/* ── 确认信息 Summary Chip ── */}
+      {engineError && <p role="alert" style={{ color: errorClr, fontSize: 14, lineHeight: 1.8 }}>{engineError}</p>}
       <AnimatePresence>
         {showSummary && (
           <motion.div

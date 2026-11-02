@@ -10,12 +10,13 @@
     "test:time": "tsx scripts/regression/birth-time-conversion.test.ts",
     "test:e2e": "playwright test",
     "test": "tsx scripts/regression/pan-integrity.test.ts && tsx scripts/regression/dst-cn.test.ts && tsx scripts/regression/clock-adjust.test.ts && tsx scripts/regression/sizhu-lichun-boundary.test.ts && tsx scripts/regression/hongluan-tianxi.test.ts && tsx scripts/regression/famous-hour-consistency.test.ts && tsx scripts/regression/iztro-time-index-boundary.test.ts && tsx scripts/regression/solar-date-exists.test.ts && tsx scripts/regression/natal-dual-sihua-same-palace.test.ts && tsx scripts/regression/neutral-naming.test.ts && npm run test:time",
-    "mobile:build": "node mobile/write-notices.mjs && vite build --config mobile/vite.config.mts",
+    "mobile:build": "node mobile/write-ni-teaching.mjs && node mobile/write-notices.mjs && vite build --config mobile/vite.config.mts",
     "mobile:preview": "vite preview --config mobile/vite.config.mts",
     "mobile:sync": "npm run mobile:build && cap sync android",
     "mobile:test": "playwright test --config mobile/playwright.config.ts",
     "android:build": "powershell -NoProfile -File scripts/build-android.ps1",
-    "test:ai": "tsx scripts/regression/deepseek-prompt.test.ts"
+    "test:ai": "tsx scripts/regression/deepseek-prompt.test.ts",
+    "test:ni": "tsx scripts/regression/ni-course-cases.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",

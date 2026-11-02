@@ -49,8 +49,8 @@ function formAt(clockHour: string): BirthFormState {
 const lateZi = formToBirthInfo(formAt('23'));
 assert.deepEqual(
   { year: lateZi.year, month: lateZi.month, day: lateZi.day, hour: lateZi.hour },
-  { year: 2000, month: 2, day: 1, hour: 0 },
-  '23:30 is the next calendar date and branch index 0',
+  { year: 2000, month: 1, day: 31, hour: 0 },
+  'Ni course: 23:30 stays on the input calendar date with branch index 0',
 );
 
 const earlyZi = formToBirthInfo(formAt('0'));

@@ -28,6 +28,9 @@ jobs:
       - name: 排盘引擎回归
         run: npm test
 
+      - name: 倪师课程案例与规则回归
+        run: npm run test:ni
+
       - name: 生产构建
         run: npm run build
 

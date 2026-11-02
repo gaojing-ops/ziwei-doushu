@@ -23,9 +23,9 @@ function App() {
     </div>
     {showAiSettings && <DeepSeekSettings settings={ai.settings} onSaved={ai.update} onClose={() => setShowAiSettings(false)} />}
     {showAbout && <section className="mobile-about" aria-label="关于应用">
-      <h2>紫微命盘 1.1 · 自用版</h2>
-      <p>支持离线排盘、真太阳时校正、本命／大限／流年四化及宫位详情。出生时间按北京时间输入，夏令时需先自行确认标准时间。</p>
-      <p>基于 Renhuai123/ziwei-doushu 开源项目，保留其 MIT 许可。传统命理内容仅供文化学习与参考。</p>
+      <h2>紫微命盘 1.2 · 自用版</h2>
+      <p>支持离线排盘、真太阳时校正、固定生年四化、大限与小流年行宫及宫位详情。采用午夜换日、闰月归下月。出生时间按北京时间输入，夏令时需先自行确认标准时间；真太阳时由用户选择。</p>
+      <p>基于 Renhuai123/ziwei-doushu 开源项目，保留其 MIT 许可。课程短引文来源 Renhuai123/nihai-tianji-corpus，CC BY-NC-SA 4.0，仅限非商业学习研究。传统命理内容仅供参考。</p>
       <p>AI 解读可选直连 DeepSeek，由你填写自己的 API Key。密钥由安卓系统密钥加密保存；仅主动解读时发送命盘和问题，按官方 API 用量计费。排盘和宫位详情仍可离线使用。</p>
       <a href="./OPEN_SOURCE_NOTICES.txt">查看开源许可</a>
     </section>}

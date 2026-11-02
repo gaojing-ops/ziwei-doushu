@@ -51,6 +51,7 @@
 .palace-marker { border: 1px solid currentColor; border-radius: 3px; padding: 0 2px; font-size: 9px; line-height: 1.4; color: var(--chart-major); }
 .palace-body-marker { color: var(--chart-lucky); }
 .palace-age, .palace-ganzhi { color: var(--t-text2); font-size: 11px; white-space: nowrap; line-height: 1.6; }
+.palace-fortune-marker { font-size: 11px; color: var(--t-gold); font-weight: 650; }
 .palace-age { font-variant-numeric: tabular-nums; }
 .palace-ganzhi { margin-top: 2px; }
 .palace-major-stars { display: flex; flex-direction: column; gap: 4px; margin: 7px 0; min-height: 24px; }

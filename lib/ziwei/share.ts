@@ -1,5 +1,6 @@
 import type { BirthFormState } from '@/components/BirthForm';
 import type { BirthInfo } from './types';
+import { NI_PROFILE } from './ni-school';
 import {
   calculateTrueSolarTime, isValidGregorianDate, resolveZiweiDayOffset,
   shiftGregorianDate, type LateZishiRule,
@@ -10,12 +11,12 @@ export function calculateFormSolarTime(form: BirthFormState) {
   return calculateTrueSolarTime({
     year: Number(form.year), month: Number(form.month), day: Number(form.day),
     clockHour: Number(form.clockHour), clockMinute: Number(form.clockMinute),
-    longitude: form.province ? form.longitude : undefined,
+    longitude: form.province && form.useTrueSolarTime ? form.longitude : undefined,
   });
 }
 
 /** 先算地方真太阳日期与时辰，再按晚子时规则换日；所有起盘入口只转换一次。 */
-export function formToBirthInfo(form: BirthFormState, lateZishi: LateZishiRule = 'next-day'): BirthInfo {
+export function formToBirthInfo(form: BirthFormState, lateZishi: LateZishiRule = NI_PROFILE.lateZishi): BirthInfo {
   const inputDate = { year: Number(form.year), month: Number(form.month), day: Number(form.day) };
   if (!isValidGregorianDate(inputDate.year, inputDate.month, inputDate.day)) {
     throw new RangeError('出生日期不存在');
@@ -47,6 +48,8 @@ export function formToBirthInfo(form: BirthFormState, lateZishi: LateZishiRule =
     province: form.province || undefined,
     city: form.city || undefined,
     longitude: form.province ? form.longitude : undefined,
+    useTrueSolarTime: !!form.useTrueSolarTime,
+    timeUnknown: form.unknownTime,
     origInput: form.unknownTime ? undefined : { ...inputDate, clockHour, clockMinute },
   };
 }
@@ -55,6 +58,8 @@ export function formToBirthInfo(form: BirthFormState, lateZishi: LateZishiRule =
 export function formToSearchParams(form: BirthFormState): URLSearchParams {
   const p = new URLSearchParams();
   if (form.name) p.set('n', form.name);
+  p.set('rules', NI_PROFILE.id);
+  if (form.useTrueSolarTime) p.set('solar', '1');
   p.set('y', form.year);
   p.set('m', form.month);
   p.set('d', form.day);
@@ -83,6 +88,7 @@ export function searchParamsToForm(params: URLSearchParams): Partial<BirthFormSt
     month,
     day,
     unknownTime: params.get('u') === '1',
+    useTrueSolarTime: params.get('solar') === '1',
     clockHour: params.get('h') || '8',
     clockMinute: params.get('mi') || '0',
     province: params.get('p') || '',

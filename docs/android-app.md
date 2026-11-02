@@ -1,61 +1,58 @@
-# 安卓自用版（离线排盘 + 可选 DeepSeek）
+# 安卓个人测试版 1.2：离线排盘与倪师课程依据
 
-应用名称：紫微命盘；应用 ID：`cn.local.ziweichart`；当前版本：1.1，版本号 2；最低系统：Android 7.0（API 24）。需要正常更新的 Android System WebView。原 1.0 离线 APK 保留。
+应用 ID：`cn.local.ziweichart`；版本 1.2（versionCode 3）；Android 7.0 及以上，需正常更新的 Android System WebView。调试签名的个人测试构建，与此前 1.0/1.1 沿用同一签名，可覆盖安装并保留已保存的 Key；不含自动更新。自行构建默认使用自己的调试证书，不能直接覆盖本 Release。
 
-## 功能与范围
+## 当前规则与范围
 
-- 沿用网页版同一套排盘、时间换日、运限四化和手机布局，不复制另一份算法。
-- 页面与算法打包进 APK，安装后无需电脑服务，可断网排盘。
-- 出生表单只保留在本次运行内，排盘在手机上完成；主题保存在本机。不含登录、广告或统计。DeepSeek 为可选服务，未配置或未主动发送时不会调用。
-- AI 仅发送白名单命盘结构、性别、虚岁、所选运限和问题，不自动附带姓名、出生日期、地点、经度、原始时刻。用户在问题里自行填写的个人资料会随问题发送。
-- 返回键可从命盘回到保留输入的表单；支持深浅主题、宫位大字详情和开源许可查看。
-- 真太阳时采用现有近似算法；仍按北京时间输入，历史夏令时需用户先确认标准时间。
-- 属于个人测试版，不包含应用商店上架、自动更新、账号同步或完整流年十二宫。
+采用 `ni-tianji-v1`：午夜换日、闰月整月归下月、固定生年四化；辛年魁午钺寅；按所选年份定位十年大限和男顺女逆小流年。本命和大限看三方四正，小流年突出本宫及对宫。不含宫干飞化、流年年干追加四化、流月流日或阳宅面相。
 
-## 构建
+出生日期按公历、北京时间标准时间填写，课程农历案例须先换算为公历；历史夏令时请先确认标准时间。真太阳时默认关闭，可在选好出生地后自行勾选，采用近似算法；本次未找到“倪师必用真太阳时”的充分直接依据。未知时辰仅按子时试排并明确提示。闰月三十归入仅有二十九天的下月时，会提示暂不能排盘，不静默改日。
+
+完整出处、课程案例断言范围及未核验项目见 [教学核对记录](ni-school-audit.md)。不是课程全部内容的复刻，也不保证预测准确。
+
+## 安装与 DeepSeek
+
+1. 下载 Release 中的 `Ziwei-DeepSeek-1.2.apk`。可直接覆盖此前版本；手机上的安装来源许可由用户自行操作。
+2. 打开“DeepSeek 设置”，自己在手机填写 Key，选择模型与输出长度，阅读并勾选资料发送与计费说明后保存。保存不发起 API 调用。
+3. 起盘、选择主题或宫位后点击“开始解读”；支持流式回答、追问、停止。切换年份、视图、宫位或设置会取消旧请求并清空对话，避免混盘；不自动重试。
+4. 每次只从离线课程库中检索最多 8 条依据发给模型。回答应带教学编号，展开“本次教学依据”可看原文及视频出处。没有引用或引用未提供编号时会提示，不将该回答作为成功历史继续传入。编号检查不保证推理正确。
+
+页面与算法打包在 APK 中，排盘可离线；DeepSeek 需要联网并按用户账户用量计费。默认模型 `deepseek-flash`，可选 `deepseek-v4-pro`，按当前原生适配实现调用。
+
+## 隐私与实现
+
+Key 用 Android Keystore 中的 AES-256-GCM 密钥加密，密文和随机 IV 保存在应用私有偏好设置，没有明文回退，也不会返回网页层。可以删除 Key；关闭系统备份、桥日志、WebView 调试及明文网络。APK 不内置真实 Key，无广告、登录或统计。
+
+网络由原生插件发送到固定地址 `https://api.deepseek.com/chat/completions`，拒绝重定向，正常验证 TLS。网页 CSP 仍为 `connect-src 'none'`，浏览器预览不能配置安卓密钥。只有普通 INTERNET 权限和 AndroidX 私有接收器权限，没有存储权限。
+
+发送白名单命盘结构、性别、虚岁、所选行限、问题和本次公共教学短引文，不自动附带姓名、出生日期、地点、经度或原始时间。自己写进问题的资料仍会被发送。聊天只保留在当前界面，成功历史最多四轮；失效请求和未通过编号检查的回答不进入成功历史。
+
+## 构建与测试
 
 ```powershell
 npm ci
+npm run typecheck
+npm test
+npm run test:ni
+npm run test:ai
+npm run build
+npx playwright install chromium
+npm run test:e2e
 npm run mobile:build
-$env:PLAYWRIGHT_CHANNEL = 'msedge'
 npm run mobile:test
 
-# 先安装 JDK 21 和 Android SDK：platforms;android-36、build-tools;36.0.0。
-# 使用 SDK 前需由用户同意 Google Android SDK 许可协议。
-# 工具可放在 .android-tools/ 下，也可指定环境变量。
+# 先自行接受 Google SDK 许可并安装 JDK 21 / SDK Platform 36 / Build-Tools 36。
 $env:ANDROID_SDK_ROOT = 'D:/path/to/android-sdk'
 $env:JAVA_HOME = 'D:/path/to/jdk-21'
-powershell -NoProfile -File scripts/build-android.ps1
+npm run android:build
 ```
 
-当前输出：`outputs/Ziwei-DeepSeek-1.1.apk` 和 SHA-256 校验文件。构建脚本还编译并运行原生 SSE 回归测试。当前构建脚本生成调试签名 APK，适合个人试用；以后覆盖安装须沿用同一签名。正式发布前需配置独立的发布签名。
+Windows 可用已安装 Edge：设置 `$env:PLAYWRIGHT_CHANNEL = 'msedge'`。构建脚本输出 APK 与 SHA-256，并编译、运行 3 项原生 SSE 解析测试。SDK/JDK、缓存、`.env`、私钥和本机配置不提交。
 
-## 安装
+浏览器测试覆盖规则边界、课程例盘界面、不同屏宽和 11 项离线／模拟 AI 场景。**尚未使用真实 DeepSeek Key 调用，尚未在实体手机验证**；浏览器测试及 APK 签名校验不等于实机验收。最终 APK 的哈希、签名和资源核对结果随 Release 附件提供。
 
-将 APK 传到自己的安卓手机，点击安装；若系统提示，按手机界面为所用文件管理器临时允许安装来源。安装与来源许可由用户在手机上完成。无需安装 Google Play 服务。
+## 来源与许可
 
-网页离线资源测试与原生安装验证不同；APK 构建成功后仍需在实际手机上确认启动、系统返回键和屏幕边缘显示。
+代码来自 Renhuai123/ziwei-doushu，保留 MIT 原版权。课程短引文来自上游 docs/tianji-ziwei 与 Renhuai123/nihai-tianji-corpus（462faa4），新增去重索引、条件检索和引用编号；语料及衍生索引按 CC BY-NC-SA 4.0 处理，课程著作权归原权利人。**含该语料的 APK 仅供非商业学习研究**。APP“关于 → 查看开源许可”保留完整声明。
 
-## 2026-11-02 原 1.0 离线版验证
-
-- 已在用户确认 Google SDK 许可后完成本机安卓构建，生成 `outputs/Ziwei-Offline-1.0.apk`，4,963,589 字节。
-- APK v2 签名验证通过；包名 `cn.local.ziweichart`，最低 API 24，目标 API 36。
-- APK 内五个离线资源文件逐一与测试过的构建结果进行 SHA-256 比对，全部一致，Android 字节码存在。
-- 最终清单没有 INTERNET 或存储权限；仅保留 AndroidX 为内部接收器声明的应用私有签名权限。
-- 两项离线应用浏览器测试、十二项网页版与响应式测试、类型检查和构建均通过。未连接实体安卓手机，因此没有宣称实机安装通过。
-- SDK 安装工具已升级为 Android CLI；所需包标识使用 `platforms/android-36`、`build-tools/36.0.0`。AGP 另自动补装 Build-Tools 35 和 Platform-Tools。
-
-## 1.1 DeepSeek 设置与发送范围
-
-1. 覆盖安装新版后，打开顶部“DeepSeek 设置”。在手机中填写自己的 API Key，不必发送给开发者。
-2. 默认使用 `deepseek-flash`，可切换 `deepseek-v4-pro`；单次输出上限为 1024 或 2048 tokens。保存配置本身不调用接口。
-3. 阅读并勾选资料发送与计费说明，再保存。密钥通过 Android Keystore 中的 AES-256-GCM 密钥加密，密文与随机 IV 保存在应用私有偏好设置；不使用明文回退，读取设置不返回原始密钥，可删除。
-4. 起盘后选择主题，点击“开始解读”，或者输入问题后点击“发送追问”。回答流式显示，可停止；不自动重试。切换视图、年份、宫位或配置会取消旧请求并清空对话，避免混用结论。聊天仅保留在本次界面内。
-
-网络请求由原生插件发送，固定为 `https://api.deepseek.com/chat/completions`，不跟随重定向。网页 CSP 仍禁止网络连接，未开放任意代理或自定义地址；APP 增加普通 INTERNET 权限。关闭原生桥日志和 WebView 调试，密钥不打包进 APK。HTTP 401、402、429、超时等只显示固定提示，不回显响应正文或认证头。
-
-接口依据：[DeepSeek 官方 API 文档](https://api-docs.deepseek.com/)、[Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/)。当前明确关闭 thinking 模式以控制等待与输出；上下文仅保留最近四轮成功问答。命盘提示词要求区分盘面事实、传统解释和不确定性，不编造古籍或倪海厦引文。
-
-验证包括：9 项移动浏览器模拟接口/离线场景、命盘资料隐私及四化回归、3 项原生 SSE 解析测试、类型检查与生产构建。模拟调用不使用真实密钥、不产生 API 费用；尚未在实体手机或真实 DeepSeek 账户上验证加密存储与联网调用。
-
-交付已核对：1.1 使用与 1.0 相同的签名证书，应用 ID 不变，版本号升为 2，可覆盖安装。最终 APK 的 v2 签名、最低系统和权限清单已验证；打包资源与测试过的构建结果逐项一致，桥日志和 WebView 调试均关闭。详细哈希和验证结果见 `outputs/DeepSeek-1.1-verification.json`。
+[全部来源说明](../ATTRIBUTION.md)。1.1 历史构建说明保存在 [原标签](https://github.com/gaojing-ops/ziwei-doushu/blob/android-v1.1/docs/android-app.md)。

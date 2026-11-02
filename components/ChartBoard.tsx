@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { ZiweiChart, Palace, Star } from '@/lib/ziwei/types';
 import { BRANCHES, STEMS } from '@/lib/ziwei/constants';
 import PalaceCell from './PalaceCell';
-import { type TimeView, getYearStemIndex, buildSiHuaOverlay } from './TimeNav';
+import { type TimeView } from './TimeNav';
+import { niFortune } from '@/lib/ziwei/ni-school';
 
 interface ChartBoardProps {
   chart: ZiweiChart;
@@ -60,19 +61,7 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
   const palaceMap: Record<number, Palace> = {};
   chart.palaces.forEach(p => { palaceMap[p.branch] = p; });
 
-  // 计算当前叠加四化数据（大限或流年）
-  const currentDx = chart.daXians[chart.currentDaXianIndex];
-  const overlayData: Record<string, string> = (() => {
-    if (timeView === 'daxian' && currentDx) {
-      const dxPalace = chart.palaces.find(p => p.branch === currentDx.palaceBranch);
-      if (dxPalace) return buildSiHuaOverlay(dxPalace.stem);
-    }
-    if (timeView === 'liunian') {
-      return buildSiHuaOverlay(getYearStemIndex(liunianYear));
-    }
-    return {};
-  })();
-  const overlayLabel = timeView === 'daxian' ? '限' : timeView === 'liunian' ? '年' : undefined;
+  const fortune = niFortune(chart, timeView, liunianYear);
 
   const handlePalaceClick = (branch: number) => {
     setSelectedBranch(branch);
@@ -81,7 +70,9 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
   };
 
   // 三方四正
-  const sanFangBranches = selectedBranch !== null ? getSanFangSiZheng(selectedBranch) : null;
+  const focus = selectedBranch ?? fortune.activeBranch;
+  const sanFangBranches = focus === null ? null : timeView === 'liunian'
+    ? [focus, (focus + 6) % 12] : getSanFangSiZheng(focus);
   const sanFangSet = sanFangBranches ? new Set(sanFangBranches) : null;
 
   return (
@@ -117,15 +108,13 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
           return (
             <div key={branch} className="chart-palace-slot" style={{ gridRow: row, gridColumn: col, background: 'var(--t-bg)' }}>
               <PalaceCell
-                palace={palace}
+                palace={{ ...palace, isCurrentDaXian: fortune.daXian?.palaceBranch === branch }}
                 onClick={() => handlePalaceClick(branch)}
                 onStarClick={onStarSelect ? (star) => onStarSelect(star, palace) : undefined}
                 isSelected={selectedBranch === branch}
                 isSanFang={!!(sanFangSet?.has(branch) && selectedBranch !== branch)}
                 delay={i * 0.04}
-                overlayStarSiHua={Object.keys(overlayData).length > 0 ? overlayData : undefined}
-                overlayLabel={overlayLabel}
-                onSiHuaClick={onSiHuaClick ? (starName, siHua) => onSiHuaClick(starName, siHua, timeView) : undefined}
+                fortuneLabel={timeView !== 'mingpan' && fortune.activeBranch === branch ? timeView === 'daxian' ? '所选大限' : '小流年' : undefined}
               />
             </div>
           );
@@ -144,7 +133,8 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
           </div>
 
           <div className="text-center space-y-1">
-            <div className="chart-center-title">{timeView === 'liunian' ? `${liunianYear} 流年四化` : timeView === 'daxian' ? '大限四化' : '本命命盘'}</div>
+            <div className="chart-center-title">{timeView === 'liunian' ? `${liunianYear} 小流年` : timeView === 'daxian' ? '大限行宫' : '本命命盘'}</div>
+            <div className="chart-center-caption">生年四化固定</div>
             <div className="chart-center-facts">
               <div>命宫 <span style={{ color: 'var(--t-gold)', opacity: 0.7 }}>{BRANCHES[chart.mingGongBranch]}</span></div>
               <div>身宫 <span className="text-sky-500/70">{BRANCHES[chart.shenGongBranch]}</span></div>
@@ -152,12 +142,12 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
             </div>
           </div>
 
-          {chart.currentDaXianIndex >= 0 && (() => {
-            const dx = chart.daXians[chart.currentDaXianIndex];
+          {fortune.daXian && (() => {
+            const dx = fortune.daXian;
             return (
               <div className="border border-purple-500/30 rounded-lg px-3 py-1.5 text-center"
                 style={{ background: 'rgba(147,51,234,0.06)' }}>
-                <div className="chart-center-caption">当前大限</div>
+                <div className="chart-center-caption">{liunianYear} 所属大限</div>
                 <div className="chart-center-decade">{dx.startAge}–{dx.endAge}岁</div>
                 <div className="chart-center-caption">{dx.palaceName}</div>
               </div>
@@ -167,7 +157,7 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
           <div className="chart-center-lunar">
             农历 {chart.lunarInfo.lunarYear}年<br />{chart.lunarInfo.isLeapMonth ? '闰' : ''}{chart.lunarInfo.lunarMonth}月{chart.lunarInfo.lunarDay}日
           </div>
-          <p className="chart-center-hint">{selectedBranch !== null ? `已选${palaceMap[selectedBranch].name} · 详情见下方` : '点按宫位\n查看星曜与三方四正'}</p>
+          <p className="chart-center-hint">{selectedBranch !== null ? `已选${palaceMap[selectedBranch].name} · 详情见下方` : timeView === 'liunian' ? '点按宫位\n查看本宫与对宫' : '点按宫位\n查看星曜与三方四正'}</p>
         </motion.div>
 
         {/* ── 三方四正 SVG 连线（绝对定位在 grid 内部，受 overflow:hidden 裁切） ── */}
@@ -193,53 +183,13 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
                 style={{ display: 'block' }}
               >
                 {(() => {
-                  // 三角形（三方）+ 一条直线（对宫）
-                  const p0 = BRANCH_SVG_POS[sanFangBranches[0]]; // 本宫
-                  const p1 = BRANCH_SVG_POS[sanFangBranches[1]]; // 对宫
-                  const p2 = BRANCH_SVG_POS[sanFangBranches[2]]; // 三合1
-                  const p3 = BRANCH_SVG_POS[sanFangBranches[3]]; // 三合2
-                  const dash = "6,5";
-                  const stroke = "rgba(37,99,235,0.55)";
-                  const sw = "1.5";
-                  return (
-                    <>
-                      {/* 对宫直线：本宫 ↔ 对宫（穿过中心） */}
-                      <line
-                        x1={`${p0[0]}%`} y1={`${p0[1]}%`}
-                        x2={`${p1[0]}%`} y2={`${p1[1]}%`}
-                        stroke={stroke} strokeWidth={sw}
-                        strokeDasharray={dash} strokeLinecap="round"
-                      />
-                      {/* 三合三角形：本宫 → 三合1 → 三合2 → 本宫 */}
-                      <line
-                        x1={`${p0[0]}%`} y1={`${p0[1]}%`}
-                        x2={`${p2[0]}%`} y2={`${p2[1]}%`}
-                        stroke={stroke} strokeWidth={sw}
-                        strokeDasharray={dash} strokeLinecap="round"
-                      />
-                      <line
-                        x1={`${p2[0]}%`} y1={`${p2[1]}%`}
-                        x2={`${p3[0]}%`} y2={`${p3[1]}%`}
-                        stroke={stroke} strokeWidth={sw}
-                        strokeDasharray={dash} strokeLinecap="round"
-                      />
-                      <line
-                        x1={`${p3[0]}%`} y1={`${p3[1]}%`}
-                        x2={`${p0[0]}%`} y2={`${p0[1]}%`}
-                        stroke={stroke} strokeWidth={sw}
-                        strokeDasharray={dash} strokeLinecap="round"
-                      />
-                      {/* 四个宫位中心标记点 */}
-                      {[p0, p1, p2, p3].map((p, i) => (
-                        <circle
-                          key={i}
-                          cx={`${p[0]}%`} cy={`${p[1]}%`}
-                          r="3"
-                          fill={i === 0 ? 'rgba(37,99,235,0.8)' : 'rgba(37,99,235,0.45)'}
-                        />
-                      ))}
-                    </>
-                  );
+                  const points = sanFangBranches.map(b => BRANCH_SVG_POS[b]);
+                  const pairs = points.length === 2 ? [[0, 1]] : [[0, 1], [0, 2], [2, 3], [3, 0]];
+                  return <>
+                    {pairs.map(([a, b]) => <line key={`${a}-${b}`} x1={`${points[a][0]}%`} y1={`${points[a][1]}%`}
+                      x2={`${points[b][0]}%`} y2={`${points[b][1]}%`} stroke="rgba(37,99,235,0.55)" strokeWidth="1.5" strokeDasharray="6,5" />)}
+                    {points.map((p, i) => <circle key={i} cx={`${p[0]}%`} cy={`${p[1]}%`} r="3" fill="rgba(37,99,235,0.65)" />)}
+                  </>;
                 })()}
               </svg>
             </motion.div>
@@ -263,7 +213,7 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
           <span key={h} className={`border px-1.5 py-0.5 rounded-full font-medium ${c}`}>{h}</span>
         ))}
         <span className="px-1.5 py-0.5 rounded-full" style={{ color: 'var(--t-faint)', border: '1px solid var(--t-border)' }}>
-          点击宫位看三方四正
+          {timeView === 'liunian' ? '点击宫位看本宫及对宫' : '点击宫位看三方四正'}
         </span>
       </motion.div>
 
@@ -277,7 +227,6 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
               {palace.stars.map(star => <span key={star.name} className={`palace-detail-star star-${star.type}`}>
                 {star.name}{star.brightnessRaw && <small> {star.brightnessRaw}</small>}
                 {star.siHua && <small> · 生年化{star.siHua}</small>}
-                {overlayData[star.name] && <small> · {overlayLabel === '年' ? '流年' : '大限'}化{overlayData[star.name]}</small>}
               </span>)}
             </div>
           </>;

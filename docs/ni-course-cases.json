@@ -1,0 +1,77 @@
+[
+  {
+    "id": "tianji-ziwei-zi",
+    "lunar": [
+      1961,
+      3,
+      5
+    ],
+    "hour": 10,
+    "gender": "female",
+    "inputSource": "https://www.jingfangjia.cn/jy/1056.html",
+    "placementSource": "https://www.bilibili.com/video/BV1KJsLekEfA?p=9&t=510",
+    "expected": {
+      "ming": 6,
+      "stars": {
+        "紫微": 0,
+        "贪狼": 6,
+        "天魁": 6,
+        "七杀": 10,
+        "擎羊": 10,
+        "太阳": 9
+      },
+      "annual": [
+        [
+          25,
+          7
+        ],
+        [
+          37,
+          7
+        ],
+        [
+          40,
+          4
+        ]
+      ]
+    }
+  },
+  {
+    "id": "tianji-ziwei-wei",
+    "lunar": [
+      1957,
+      6,
+      10
+    ],
+    "hour": 6,
+    "gender": "female",
+    "inputSource": "https://www.jingfangjia.cn/jy/1088.html",
+    "placementSource": "https://www.bilibili.com/video/BV1KJsLekEfA?p=13&t=2867",
+    "expected": {
+      "ming": null,
+      "stars": {
+        "紫微": 7
+      },
+      "annual": []
+    }
+  },
+  {
+    "id": "tianji-ziwei-xu",
+    "lunar": [
+      1957,
+      1,
+      29
+    ],
+    "hour": 2,
+    "gender": "male",
+    "inputSource": "https://www.jingfangjia.cn/jy",
+    "placementSource": "https://www.bilibili.com/video/BV1KJsLekEfA?p=15&t=258",
+    "expected": {
+      "ming": null,
+      "stars": {
+        "紫微": 10
+      },
+      "annual": []
+    }
+  }
+]

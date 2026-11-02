@@ -81,7 +81,7 @@ export default function ChartApp({ localOnly = false, renderInsights }: {
           出生输入：{chart.birthInfo.origInput.year}-{String(chart.birthInfo.origInput.month).padStart(2, '0')}-{String(chart.birthInfo.origInput.day).padStart(2, '0')}
           {' '}{String(chart.birthInfo.origInput.clockHour).padStart(2, '0')}:{String(chart.birthInfo.origInput.clockMinute).padStart(2, '0')}
           {' → '}排盘日期：{chart.birthInfo.year}-{String(chart.birthInfo.month).padStart(2, '0')}-{String(chart.birthInfo.day).padStart(2, '0')}
-          （{chart.birthInfo.province ? '按出生地真太阳时，' : ''}晚子时按次日）
+          （{chart.birthInfo.useTrueSolarTime ? '已启用真太阳时，' : ''}倪师口径：午夜换日、闰月归下月）
         </p>
       )}
 
@@ -92,6 +92,7 @@ export default function ChartApp({ localOnly = false, renderInsights }: {
         onViewChange={setView}
         onYearChange={setLiunianYear}
       />
+      {chart.birthInfo.timeUnknown && <p className="chart-birth-summary">时辰不详：目前按子时试排，不能视为已确定的命盘。</p>}
 
       <div className="chart-result-layout">
         <ChartBoard chart={chart} view={view} liunianYear={liunianYear} onPalaceSelect={setSelectedPalace} />

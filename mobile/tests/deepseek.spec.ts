@@ -46,7 +46,9 @@ async function nativeMock(page: Page, configured = true, scenario = 'success') {
               setTimeout(() => {
                 if (!pending.has(request.requestId)) return;
                 pending.delete(request.requestId);
-                resolve({ text: '第一段中文，第二段', finishReason: 'stop', promptTokens: 100, completionTokens: 20 });
+                const sourceId = /\"id\":\"(TJ-\d{4})\"/.exec(request.messages[0].content)?.[1];
+                const finalText = state.scenario === 'uncited' ? '没有课程引用的回答' : state.scenario === 'forged' ? '虚构引用 [TJ-9999]' : `第一段中文，第二段 [${sourceId}]`;
+                resolve({ text: finalText, finishReason: 'stop', promptTokens: 100, completionTokens: 20 });
               }, 300);
             });
           }
@@ -98,7 +100,7 @@ test('configure on device, explicit send, sanitized context and follow-up histor
   await expect(page.getByRole('region', { name: 'DeepSeek 解读' })).toContainText('deepseek-v4-pro');
   expect(await requests(page)).toHaveLength(0);
   await page.getByRole('button', { name: '开始解读', exact: true }).tap();
-  await expect(page.getByText('第一段中文，第二段', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^第一段中文，第二段/)).toBeVisible();
   const first = (await requests(page))[0];
   expect(first.messages).toHaveLength(2);
   expect(JSON.stringify(first.messages)).not.toMatch(/PRIVATE_NAME|birthInfo|origInput|clockHour/);
@@ -118,11 +120,11 @@ test('stream partial answer, stop, then scope changes clear and cancel old resul
   await page.getByRole('button', { name: '重新解读', exact: true }).tap();
   await expect.poll(async () => (await requests(page)).length).toBe(2);
   await page.getByRole('button', { name: '下一流年' }).tap();
-  await expect(page.getByRole('region', { name: 'DeepSeek 解读' })).toContainText('2027 流年四化');
+  await expect(page.getByRole('region', { name: 'DeepSeek 解读' })).toContainText('2027 小流年');
   await expect(page.getByText('第一段中文', { exact: true })).toHaveCount(0);
   await page.evaluate(() => { (window as unknown as { __deepseekMock: { scenario: string } }).__deepseekMock.scenario = 'success'; });
   await page.getByRole('button', { name: '开始解读', exact: true }).tap();
-  await expect(page.getByText('第一段中文，第二段', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^第一段中文，第二段/)).toBeVisible();
   await expect(page.getByText('旧分片不得混入', { exact: true })).toHaveCount(0);
   const last = (await requests(page)).at(-1)!;
   expect(last.messages).toHaveLength(2);
@@ -140,7 +142,7 @@ test('settings and AI controls fit the 320px Android viewport', async ({ page },
   await page.getByRole('button', { name: '收起', exact: true }).tap();
   await makeChart(page);
   await page.getByRole('button', { name: '开始解读', exact: true }).tap();
-  await expect(page.getByText('第一段中文，第二段', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^第一段中文，第二段/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('deepseek-answer-320.png'), fullPage: true, scale: 'css' });
 });
@@ -159,5 +161,19 @@ for (const [code, text] of [['AUTH', '密钥无效'], ['BALANCE', '余额不足'
     await expect(settings).toContainText('已删除本机密钥');
     await settings.getByRole('button', { name: '收起' }).tap();
     await expect(page.getByRole('button', { name: '开始解读', exact: true })).toBeDisabled();
+  });
+}
+
+for (const scenario of ['uncited', 'forged']) {
+  test(`${scenario} teaching answer is flagged and excluded from follow-up history`, async ({ page }) => {
+    await nativeMock(page, true, scenario); await makeChart(page);
+    await page.getByRole('button', { name: '开始解读', exact: true }).tap();
+    await expect(page.getByRole('alert')).toContainText(scenario === 'forged' ? '依据校验未通过' : '没有引用');
+    await page.getByText(/本次教学依据/).click();
+    await expect(page.getByRole('link', { name: /原课程 P5/ })).toBeVisible();
+    await page.getByLabel('追问内容').fill('请补充可核对的依据');
+    await page.getByRole('button', { name: '发送追问' }).tap();
+    await expect.poll(async () => (await requests(page)).length).toBe(2);
+    expect((await requests(page))[1].messages).toHaveLength(2);
   });
 }
