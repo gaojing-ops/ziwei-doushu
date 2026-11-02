@@ -37,7 +37,18 @@ for (const size of sizes) {
       await page.getByRole('button', { name: /立即起盘/ }).click();
       const cells = page.locator('.chart-palace-cell');
       await expect(cells).toHaveCount(12);
-      await expect.poll(() => cells.evaluateAll(elements => elements.every(element => getComputedStyle(element).opacity === '1'))).toBe(true);
+      // Settle finite native entrance animations before measuring layout. Keep
+      // the final visibility check, without depending on headless scheduling.
+      await expect.poll(() => cells.evaluateAll(elements => {
+        for (const element of elements) for (const animation of element.getAnimations()) {
+          const timing = animation.effect?.getComputedTiming();
+          if (timing && Number.isFinite(Number(timing.endTime))) animation.finish();
+        }
+        return elements.every(element => {
+          const style = getComputedStyle(element);
+          return style.opacity === '1' && (style.transform === 'none' || new DOMMatrixReadOnly(style.transform).isIdentity);
+        });
+      })).toBe(true);
 
       const geometry = await page.evaluate(() => {
         const board = document.querySelector('.chart-board')!.getBoundingClientRect();
