@@ -18,6 +18,18 @@ $sdkProperty = -join ($sdkProperty.ToCharArray() | ForEach-Object {
     if ([int]$_ -gt 127) { '\u{0:x4}' -f [int]$_ } else { [string]$_ }
 })
 [IO.File]::WriteAllText((Join-Path $projectRoot 'android\local.properties'), $sdkProperty + "`n", [Text.UTF8Encoding]::new($false))
+# Remove only these generated resource directories, after checking workspace bounds
+# and reparse points. Stale hashed bundles must not be carried into a new APK.
+foreach ($generatedRelative in @('mobile\dist', 'android\app\src\main\assets\public')) {
+    $generatedPath = [IO.Path]::GetFullPath((Join-Path $projectRoot $generatedRelative))
+    $projectPrefix = [IO.Path]::GetFullPath($projectRoot).TrimEnd('\') + '\'
+    if (-not $generatedPath.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'Generated asset path is outside this project.' }
+    if (Test-Path -LiteralPath $generatedPath) {
+        $generatedItems = @((Get-Item -LiteralPath $generatedPath)) + @(Get-ChildItem -LiteralPath $generatedPath -Recurse -Force)
+        if ($generatedItems | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Refusing to clean generated assets through a reparse point.' }
+        Remove-Item -LiteralPath $generatedPath -Recurse -Force
+    }
+}
 Push-Location $projectRoot
 try {
     & npm.cmd run mobile:sync
