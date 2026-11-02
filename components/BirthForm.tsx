@@ -5,6 +5,8 @@ import type { BirthInfo } from '@/lib/ziwei/types';
 import { SHICHEN } from '@/lib/ziwei/constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { PROVINCES } from '@/lib/ziwei/cities';
+import { calculateFormSolarTime, formToBirthInfo } from '@/lib/ziwei/share';
+import { formatTrueSolarClock, isValidGregorianDate } from '@/lib/ziwei/true-solar-time';
 
 export interface BirthFormState {
   name: string;
@@ -30,22 +32,6 @@ interface BirthFormProps {
 }
 
 const SHICHEN_NAMES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
-
-/** 根据北京时间 + 经度计算真太阳时时辰支 (0-11) */
-function calcTrueSolarBranch(clockHour: number, clockMinute: number, longitude: number): number {
-  const clockMins = clockHour * 60 + clockMinute;
-  const offset = (longitude - 120) * 4;
-  const solar = ((clockMins + offset) % 1440 + 1440) % 1440;
-  if (solar >= 1380 || solar < 60) return 0;
-  return Math.floor((solar - 60) / 120) + 1;
-}
-
-/** 检查日期是否合法 */
-function isValidDate(y: number, m: number, d: number): boolean {
-  if (!y || !m || !d) return false;
-  const date = new Date(y, m - 1, d);
-  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
-}
 
 export default function BirthForm({ onSubmit, loading, initialData, onFormSave, hideSubmit }: BirthFormProps) {
   const { theme } = useTheme();
@@ -79,31 +65,31 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
     return prov ? prov.cities : [];
   }, [form.province]);
 
-  const branch = useMemo(() => {
-    if (form.unknownTime) return 0;
-    return calcTrueSolarBranch(
-      parseInt(form.clockHour) || 0,
-      parseInt(form.clockMinute) || 0,
-      form.longitude,
-    );
-  }, [form.clockHour, form.clockMinute, form.longitude, form.unknownTime]);
+  const solar = useMemo(() => calculateFormSolarTime(form), [form]);
+  const branch = form.unknownTime ? 0 : solar.branch;
 
   const offsetMin = Math.round((form.longitude - 120) * 4);
   const shichenInfo = SHICHEN[branch];
 
   // ─── 校验逻辑 ───────────────────────────────────────────
-  const y = parseInt(form.year) || 0;
-  const m = parseInt(form.month) || 0;
-  const d = parseInt(form.day) || 0;
+  const y = Number(form.year);
+  const m = Number(form.month);
+  const d = Number(form.day);
 
   const errors = {
     year: !form.year ? '请选择出生年份'
-      : y < 1900 || y > 2026 ? '年份范围：1900–2026'
+      : !Number.isInteger(y) || y < 1900 || y > 2026 ? '年份范围：1900–2026'
       : '',
     month: !form.month ? '请选择月份' : '',
     day: !form.day ? '请选择日期'
-      : form.year && form.month && !isValidDate(y, m, d) ? `${m}月没有${d}日`
+      : form.year && form.month && !isValidGregorianDate(y, m, d) ? `${m}月没有${d}日`
       : '',
+    time: !form.unknownTime && (form.clockHour === '' || form.clockMinute === '' ||
+      !Number.isInteger(Number(form.clockHour)) || Number(form.clockHour) < 0 || Number(form.clockHour) > 23 ||
+      !Number.isInteger(Number(form.clockMinute)) || Number(form.clockMinute) < 0 || Number(form.clockMinute) > 59)
+      ? '请选择有效的出生小时和分钟' : '',
+    location: !form.unknownTime && form.province && (!Number.isFinite(form.longitude) || Math.abs(form.longitude) > 180)
+      ? '请选择有效的出生地点' : '',
   };
   const hasError = Object.values(errors).some(Boolean);
 
@@ -145,7 +131,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
     setTouched({ year: true, month: true, day: true });
     if (hasError) return;
     onFormSave?.({ ...form });
-    onSubmit({ year: y, month: m, day: d, hour: branch, gender: form.gender, name: form.name || undefined, province: form.province || undefined, city: form.city || undefined, longitude: form.province ? form.longitude : undefined });
+    onSubmit(formToBirthInfo(form));
   };
 
   // ─── 样式变量 ────────────────────────────────────────────
@@ -245,6 +231,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
           <div>
             <select
+              aria-label="出生年份"
               value={form.year}
               onChange={e => { setForm({ ...form, year: e.target.value }); setTouched(t => ({ ...t, year: true })); }}
               style={showErr('year') && errors.year ? errorInputStyle : inputStyle}
@@ -259,6 +246,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
           </div>
           <div>
             <select
+              aria-label="出生月份"
               value={form.month}
               onChange={e => { setForm({ ...form, month: e.target.value }); setTouched(t => ({ ...t, month: true })); }}
               style={showErr('month') && errors.month ? errorInputStyle : inputStyle}
@@ -273,6 +261,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
           </div>
           <div>
             <select
+              aria-label="出生日期"
               value={form.day}
               onChange={e => { setForm({ ...form, day: e.target.value }); setTouched(t => ({ ...t, day: true })); }}
               style={showErr('day') && errors.day ? errorInputStyle : inputStyle}
@@ -293,6 +282,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
         <label style={{ display: 'block', fontSize: '11px', color: labelClr, marginBottom: '6px', letterSpacing: '0.05em' }}>出生地点（用于真太阳时校正）</label>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <select
+            aria-label="出生省份"
             value={form.province}
             onChange={e => handleProvince(e.target.value)}
             style={inputStyle}
@@ -305,6 +295,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
             ))}
           </select>
           <select
+            aria-label="出生城市"
             value={form.city}
             onChange={e => handleCity(e.target.value)}
             disabled={!form.province}
@@ -341,6 +332,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
             </motion.p>
           )}
         </AnimatePresence>
+        <FieldError msg={errors.location} />
       </div>
 
       {/* ── 出生时间 ── */}
@@ -349,6 +341,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
         <div style={{ borderRadius: '14px', padding: '12px', background: panelBg, border: `1px solid ${panelBorder}`, opacity: form.unknownTime ? 0.45 : 1, pointerEvents: form.unknownTime ? 'none' : 'auto', transition: 'opacity 0.2s' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
             <select
+              aria-label="出生小时"
               value={form.clockHour}
               onChange={e => setForm({ ...form, clockHour: e.target.value })}
               style={inputStyle}
@@ -358,6 +351,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
               ))}
             </select>
             <select
+              aria-label="出生分钟"
               value={form.clockMinute}
               onChange={e => setForm({ ...form, clockMinute: e.target.value })}
               style={inputStyle}
@@ -369,15 +363,26 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
           </div>
           {/* 真太阳时结果 */}
           <div style={{ textAlign: 'center', padding: '4px 0' }}>
-            <span style={{ fontSize: '10px', color: isDark ? 'rgba(170,195,220,0.75)' : 'rgba(140,100,20,0.5)' }}>真太阳时 → </span>
+            <span style={{ fontSize: '10px', color: isDark ? 'rgba(170,195,220,0.75)' : 'rgba(140,100,20,0.5)' }}>{solar.corrected ? '真太阳时' : '北京时间'} → </span>
             <span style={{ fontSize: '15px', color: goldText, fontWeight: 600, letterSpacing: '0.08em' }}>
-              {SHICHEN_NAMES[branch]}时
+              {!form.unknownTime && `${formatTrueSolarClock(solar)} · `}{SHICHEN_NAMES[branch]}时
             </span>
             {shichenInfo && (
               <span style={{ fontSize: '10px', color: isDark ? 'rgba(170,195,220,0.75)' : 'rgba(140,100,20,0.5)', marginLeft: '4px' }}>
                 （{shichenInfo.range}）
               </span>
             )}
+            {solar.corrected && solar.dateValid && (
+              <div style={{ fontSize: '10px', marginTop: 4, color: labelClr }}>
+                经度修正 {solar.longitudeCorrectionMinutes.toFixed(1)} 分钟，均时差 {solar.equationOfTimeMinutes.toFixed(1)} 分钟
+              </div>
+            )}
+            {showSummary && !form.unknownTime && (() => {
+              const info = formToBirthInfo(form);
+              return <div style={{ fontSize: '11px', marginTop: 6, color: goldText }}>
+                排盘日期：{info.year}-{String(info.month).padStart(2, '0')}-{String(info.day).padStart(2, '0')}（晚子时按次日）
+              </div>;
+            })()}
           </div>
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '8px', cursor: 'pointer' }}>
@@ -391,6 +396,7 @@ export default function BirthForm({ onSubmit, loading, initialData, onFormSave, 
             不知道出生时间，以子时（23:00–01:00）起盘
           </span>
         </label>
+        <FieldError msg={errors.time} />
       </div>
 
       {/* ── 性别 ── */}

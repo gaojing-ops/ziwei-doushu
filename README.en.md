@@ -1,3 +1,5 @@
+> This is the upstream English README retained for attribution. This fork adds an Android personal test app and optional DeepSeek integration; see the [current README](README.md) and [attribution](ATTRIBUTION.md). Upstream service and dataset descriptions below do not describe the contents of this APK.
+
 <div align="center">
 
 # Zi Wei Dou Shu · Open-Source Charting Engine

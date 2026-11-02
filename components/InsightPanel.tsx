@@ -17,6 +17,7 @@ interface SelectedSiHua {
 }
 
 interface InsightPanelProps {
+  localOnly?: boolean;
   chart: ZiweiChart;
   selectedPalace?: Palace | null;
   selectedSiHua?: SelectedSiHua | null;
@@ -182,10 +183,11 @@ function AiContent({ text, streaming }: { text: string; streaming?: boolean }) {
   );
 }
 
-export default function InsightPanel({ chart, selectedPalace, selectedSiHua }: InsightPanelProps) {
+export default function InsightPanel({ chart, selectedPalace, selectedSiHua, localOnly = false }: InsightPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [apiMissing, setApiMissing] = useState(false);
   const [activeTopic, setActiveTopic] = useState<string>('overview');
   const messagesRef = useRef<Message[]>([]); // always-current copy for closures
   const loadingRef = useRef(false);
@@ -207,6 +209,7 @@ export default function InsightPanel({ chart, selectedPalace, selectedSiHua }: I
 
   // Auto-generate 命格总览 on mount
   useEffect(() => {
+    if (localOnly) return;
     if (autoLoaded.current) return;
     autoLoaded.current = true;
     sendMessage(TOPIC_PROMPTS.overview, true);
@@ -312,6 +315,7 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
       }
     } catch (e) {
       const missing = e instanceof Error && e.message === 'api-missing';
+      if (missing) setApiMissing(true);
       setMessages(prev => [...prev, { role: 'assistant', content: missing ? '开源版不含 AI 解读接口（/api/interpret），需要你自己实现后才能用，详见 README「快速开始」。排盘本身不需要任何 API Key。' : '解读失败，请稍后重试。' }]);
     } finally {
       setLoading(false);
@@ -320,7 +324,7 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
   };
 
   const sendMessage = (text: string, hidden = false) => {
-    if (!text.trim() || loadingRef.current) return;
+    if (!text.trim() || loadingRef.current || apiMissing || localOnly) return;
     loadingRef.current = true;
     setLoading(true);
 
@@ -346,12 +350,26 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
     sendMessage(input);
   };
 
+  if (localOnly) {
+    return <section className="insight-panel insight-panel-unavailable">
+      <h2>离线排盘</h2>
+      <p>命盘计算在手机内完成，出生信息不上传。点按宫位可查看完整星曜；此版本不含 AI 解读。</p>
+    </section>;
+  }
+
+  if (apiMissing) {
+    return <section className="insight-panel insight-panel-unavailable">
+      <h2>命理解读</h2>
+      <p>本地版本暂未配置 AI 解读服务。命盘、运限四化和宫位详情均可正常查看。</p>
+    </section>;
+  }
+
   return (
-    <div className="flex flex-col h-full rounded-xl overflow-hidden card-glass">
+    <div className="insight-panel flex flex-col rounded-xl overflow-hidden card-glass">
 
       {/* ── Topic buttons ── */}
       <div className="flex-shrink-0 px-2 pt-2.5 pb-2" style={{ borderBottom: '1px solid var(--t-border)' }}>
-        <div className="grid grid-cols-6 gap-1">
+        <div className="insight-topics grid grid-cols-3 gap-1">
           {TOPICS.map(t => {
             const isActive = activeTopic === t.key;
             return (
@@ -359,7 +377,7 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
                 key={t.key}
                 onClick={() => handleTopicClick(t.key)}
                 disabled={loading}
-                className="py-1.5 text-[10px] font-medium rounded-lg transition-all duration-150 disabled:opacity-40"
+                className="insight-topic font-medium rounded-lg transition-all duration-150 disabled:opacity-40"
                 style={{
                   background: isActive ? 'rgba(212,168,67,0.12)' : 'transparent',
                   border: `1px solid ${isActive ? 'rgba(212,168,67,0.3)' : 'var(--t-border)'}`,
@@ -374,7 +392,7 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
       </div>
 
       {/* ── Messages ── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+      <div ref={scrollRef} className="insight-messages flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
 
         {/* Loading state before first message */}
         {messages.length === 0 && (
@@ -442,7 +460,7 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
             placeholder="继续追问，如：今年适合换工作吗？"
             disabled={loading}
-            className="flex-1 rounded-lg px-3 py-2 text-[11px] focus:outline-none transition-colors"
+            className="insight-input flex-1 min-w-0 rounded-lg px-3 py-2 focus:outline-none transition-colors"
             style={{
               background: 'var(--t-card)',
               border: '1px solid var(--t-border)',
@@ -452,7 +470,7 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="px-3 py-2 rounded-lg text-[11px] font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="insight-send px-3 py-2 rounded-lg font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
               background: 'rgba(212,168,67,0.15)',
               border: '1px solid rgba(212,168,67,0.25)',

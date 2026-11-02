@@ -147,12 +147,7 @@ export function resolveZiweiDayOffset(
   const nextDayRule = lateZishi === 'next-day';
   const isLateZishi = solar.branch === 0 && solar.normalizedMinutes >= 1380;
 
-  if (solar.dayOffset < 0 && isLateZishi) {
-    return nextDayRule ? solar.dayOffset + 1 : solar.dayOffset;
-  }
-  if (solar.dayOffset !== 0) return solar.dayOffset;
-  if (isLateZishi) return nextDayRule ? 1 : 0;
-  return 0;
+  return solar.dayOffset + (nextDayRule && isLateZishi ? 1 : 0);
 }
 
 export function formatTrueSolarClock(solar: Pick<TrueSolarTimeResult, 'hour' | 'minute' | 'second'>, withSeconds = false): string {

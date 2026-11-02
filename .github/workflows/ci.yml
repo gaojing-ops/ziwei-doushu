@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, android-app]
   pull_request:
   workflow_dispatch:
 
@@ -27,3 +27,21 @@ jobs:
 
       - name: 排盘引擎回归
         run: npm test
+
+      - name: 生产构建
+        run: npm run build
+
+      - name: 安装测试浏览器
+        run: npx playwright install --with-deps chromium
+
+      - name: 表单与运限交互回归
+        run: npm run test:e2e
+
+      - name: 离线应用资源构建
+        run: npm run mobile:build
+
+      - name: 离线应用回归
+        run: npm run mobile:test
+
+      - name: AI 命盘资料回归
+        run: npm run test:ai
