@@ -10,6 +10,8 @@ import { BRANCHES, STEMS } from './constants';
 import { schoolStarBrightness, type BrightnessSchool } from './school-data';
 import { SCHOOL_AX } from './school-tables.generated';
 import { DEFAULT_LEAP_MONTH } from './school-config';
+import { niManualStarPositions, niManualBrightness } from './ni-manual';
+import niData from './ni-manual-data.json';
 // 飞星派工具仅供导出，不再在排盘时调用（倪师《天纪 03》：四化星永远固定不动）
 // import { detectSelfSihua, getSiHuaByStem } from './sihua';
 
@@ -113,9 +115,14 @@ export type SchoolBrightnessKind = 'default' | BrightnessSchool;
 //   53 颗星亮度与 QS 表 53/53 一致、与 XD2 只 44/53。6-20 那次改成 XD2 的「用户实证 27/27」是一台手选了
 //   现代修订亮度表（第二版）的机器，不是默认口径。流派切换只改此值（同步主辅煞，避免不一致）。
 let currentBrightSchool: BrightnessSchool = 'QS';
+let useNiBrightness = true;
+function profileStarBrightness(name: string, branch: number, school: BrightnessSchool): string | undefined {
+  return (useNiBrightness ? niManualBrightness(name, branch) : undefined) ?? schoolStarBrightness(name, branch, school);
+}
 
 export function setBrightnessSchool(school: SchoolBrightnessKind): void {
   currentBrightSchool = school === 'default' ? 'QS' : school;
+  useNiBrightness = school === 'default';
 }
 
 export type LunarMonthPolicy = 'split' | 'next-month' | 'prev-month' | 'origin-month';
@@ -180,7 +187,7 @@ export function resolveEffectiveLunarDate(
   try {
     const monthKey = isLeapMonth ? -lunarMonth : lunarMonth;
     const dayCount = LunarMonth.fromYm(lunarYear, monthKey)?.getDayCount?.();
-    if (typeof dayCount === 'number' && dayCount > 0 && lunarDay > dayCount) lunarDay = dayCount;
+    if (policy !== 'next-month' && typeof dayCount === 'number' && dayCount > 0 && lunarDay > dayCount) lunarDay = dayCount;
   } catch { /* 查不到月信息则保留原日，维持下游既有容错 */ }
 
   return {
@@ -250,6 +257,7 @@ export function getLunarInfo(
   } catch { /* lunar-javascript 接口异常时跳过 */ }
 
   return {
+    calendarDate: { year: Number(lunar.getYear()), month: Math.abs(Number(lunar.getMonth())), day: Number(lunar.getDay()), isLeapMonth: Number(lunar.getMonth()) < 0 },
     lunarYear: effective.lunarYear,
     lunarMonth: effective.lunarMonth,
     lunarDay: effective.lunarDay,
@@ -354,7 +362,7 @@ function relocateStar(palaces: Palace[], name: string, targetBranch: number): vo
   if (target) {
     target.stars.push(moved);
     // ★ 2026-06-20 天魁天钺换位（默认派 KY1）后,亮度仍是 iztro 旧宫位算的（错位）。按新宫地支重算亮度。
-    const rb = schoolStarBrightness(moved.name, targetBranch, currentBrightSchool);
+    const rb = profileStarBrightness(moved.name, targetBranch, currentBrightSchool);
     moved.brightnessRaw = extractRawBrightness(rb);
     moved.brightness = rb ? mapBrightness(rb) : undefined;
   }
@@ -383,7 +391,7 @@ export function schoolDahaoBranch(yearBranch: number): number {
 function pushNatalStar(palaces: Palace[], branch: number, name: string): void {
   const target = palaces.find((p) => p.branch === branch);
   if (!target || target.stars.some((s) => s.name === name)) return;
-  const rb = schoolStarBrightness(name, branch, currentBrightSchool);
+  const rb = profileStarBrightness(name, branch, currentBrightSchool);
   target.stars.push({
     name,
     type: mapStarType(name, ''),
@@ -410,7 +418,7 @@ function applySchoolJiekong(palaces: Palace[], yearStem: number): void {
       else continue;
       // ★ 2026-10-20 改名后按新名字补亮度：iztro 原名查不到亮度，阳干年（不换宫、下面直接 return）
       //   截空 / 副截一直留白，主流排盘默认口径是有亮度的（真盘：丙寅 辰截空=陷、巳副截=庙）。阴干换宫后下面再按新宫重算。
-      const rb = schoolStarBrightness(s.name, p.branch, currentBrightSchool);
+      const rb = profileStarBrightness(s.name, p.branch, currentBrightSchool);
       s.brightness = rb ? mapBrightness(rb) : undefined;
       s.brightnessRaw = extractRawBrightness(rb);
     }
@@ -424,8 +432,8 @@ function applySchoolJiekong(palaces: Palace[], yearStem: number): void {
   if (!jieStar || !fuStar) return;
   jie.stars = jie.stars.filter((s) => s !== jieStar);
   fu.stars = fu.stars.filter((s) => s !== fuStar);
-  const rbJ = schoolStarBrightness('截空', fu.branch, currentBrightSchool);
-  const rbF = schoolStarBrightness('副截', jie.branch, currentBrightSchool);
+  const rbJ = profileStarBrightness('截空', fu.branch, currentBrightSchool);
+  const rbF = profileStarBrightness('副截', jie.branch, currentBrightSchool);
   jieStar.brightness = rbJ ? mapBrightness(rbJ) : undefined;
   jieStar.brightnessRaw = extractRawBrightness(rbJ);
   fuStar.brightness = rbF ? mapBrightness(rbF) : undefined;
@@ -466,16 +474,18 @@ export function generateChart(
   // 非 split 时先算农历，闰月才切 byLunar；非闰月仍走 bySolar，与 split 行为完全一致
   const leapMode = opts?.leapMonth ?? DEFAULT_LEAP_MONTH;
   const effectiveLunar = resolveEffectiveLunarDate(year, month, day, leapMode);
-  if (leapMode === 'next-month' && effectiveLunar.rawLunarDay !== effectiveLunar.lunarDay) {
-    throw new RangeError('此日期为闰月三十、归入的下月只有二十九天；课程依据不足，暂不静默改成二十九日排盘。请保留原始生日核对课程安星表。');
-  }
+
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let astrolabe: any;
 
   if (leapMode !== 'split' && effectiveLunar.rawLunarMonth < 0) {
       // 闰月生人 → 按用户选项切换月份归属
-      const lunarDateStr = `${effectiveLunar.lunarYear}-${effectiveLunar.lunarMonth}-${effectiveLunar.lunarDay}`;
+      // Only the adapter uses a valid reference date. All day-based stars are
+      // subsequently recalculated from the original logical day and manual tables.
+      const count = LunarMonth.fromYm(effectiveLunar.lunarYear, effectiveLunar.lunarMonth)?.getDayCount?.() ?? 30;
+      const referenceDay = Math.min(effectiveLunar.lunarDay, count);
+      const lunarDateStr = `${effectiveLunar.lunarYear}-${effectiveLunar.lunarMonth}-${referenceDay}`;
       astrolabe = astro.byLunar(
         lunarDateStr,
         hour,
@@ -506,7 +516,7 @@ export function generateChart(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(p.majorStars ?? []).map((s: any) => {
         // ★ 2026-06-20 全套对齐主流排盘口径:亮度统一查 SB_[currentBrightSchool] 表(全书派默认),不再用 iztro/善本表
-        const rb = schoolStarBrightness(s.name as string, branch, currentBrightSchool);
+        const rb = profileStarBrightness(s.name as string, branch, currentBrightSchool);
         return {
           name:          s.name as string,
           type:          'major' as const,
@@ -518,7 +528,7 @@ export function generateChart(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(p.minorStars ?? []).map((s: any) => {
         // ★ 2026-06-20 辅星(左辅右弼天魁天钺禄存天马) + 煞星(火铃羊陀空劫) 同走 SB 表(同一套映射/索引)
-        const rb = schoolStarBrightness(s.name as string, branch, currentBrightSchool);
+        const rb = profileStarBrightness(s.name as string, branch, currentBrightSchool);
         return {
           name:          s.name as string,
           type:          mapStarType(s.name as string, s.type as string),
@@ -534,7 +544,7 @@ export function generateChart(
       ...(p.adjectiveStars ?? []).map((s: any) => {
         // ★ 2026-06-20 杂耀亮度对齐主流排盘口径：行号 = SB 亮度表 ID（SCHOOL_STAR_ID_TO_NAME 反查），
         //   落宫沿用 iztro（与金标准盘一致），金标准盘 24/24 验证。名字不在表里的杂耀 → undefined（留白，同现状）。
-        const rb = schoolStarBrightness(s.name as string, branch, currentBrightSchool);
+        const rb = profileStarBrightness(s.name as string, branch, currentBrightSchool);
         return {
           name:          s.name as string,
           type:          mapStarType(s.name as string, (s.type as string) ?? ''),
@@ -571,6 +581,26 @@ export function generateChart(
   // ★ 天魁天钺对齐默认派(KY1)——用户决策 2026-05-30,实测仅辛年与现状不同(见上方函数注释)
   const yearStemCn = (astrolabe.rawDates?.chineseDate?.yearly?.[0]) as string | undefined;
   if (yearStemCn) applySchoolKuiyue(palaces, yearStemCn);
+
+  const lunarInfo = getLunarInfo(year, month, day, hour, leapMode);
+  applySchoolJiekong(palaces, lunarInfo.yearStem);
+  applySchoolDahao(palaces, lunarInfo.yearBranch);
+  applySchoolFuxun(palaces);
+  if (leapMode === 'next-month') {
+    const positions = niManualStarPositions({ yearStem: lunarInfo.yearStem, yearBranch: lunarInfo.yearBranch,
+      month: effectiveLunar.lunarMonth, day: effectiveLunar.rawLunarDay, hour,
+      ming: BRANCHES.indexOf(astrolabe.earthlyBranchOfSoulPalace as string),
+      shen: BRANCHES.indexOf(astrolabe.earthlyBranchOfBodyPalace as string),
+      wuxingJu: parseWuxingJu(astrolabe.fiveElementsClass as string) });
+    for (const [name, branch] of Object.entries(positions)) relocateStar(palaces, name, branch);
+    // The upstream distinguishes monthly 解神 and yearly 年解. The manual's
+    // 解神 is already yearly; keep one named star rather than double-counting it.
+    for (const p of palaces) p.stars = p.stars.filter(star => star.name !== '年解');
+    const transformations = Object.entries(niData.natalSiHua).map(([kind, row]) => [row[lunarInfo.yearStem], kind]);
+    for (const p of palaces) for (const star of p.stars) {
+      star.siHua = transformations.find(([name]) => name === star.name)?.[1] as Star['siHua'];
+    }
+  }
 
   // ── 当前年龄 & 大限 ──
   // ★ 用 iztro horoscope.age.nominalAge（中国虚岁口径，与 daXianAge 范围一致）
@@ -634,13 +664,7 @@ export function generateChart(
     dx => currentAge >= dx.startAge && currentAge <= dx.endAge,
   );
 
-  // ── 农历信息（含节气四柱）──
-  const lunarInfo = getLunarInfo(year, month, day, hour, leapMode);
-
-  // ★ 2026-08-14 金标准盘核对：截空/副截阴干对调 + 年支大耗 + 旬空成对副旬
-  applySchoolJiekong(palaces, lunarInfo.yearStem);
-  applySchoolDahao(palaces, lunarInfo.yearBranch);
-  applySchoolFuxun(palaces);
+  // Calendar metadata was resolved before applying the manual star tables.
 
   // ── 命主 / 身主 / 阴阳性别 ──
   const mingZhu = calcMingZhu(mingGongBranch >= 0 ? mingGongBranch : 0);

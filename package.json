@@ -16,7 +16,7 @@
     "mobile:test": "playwright test --config mobile/playwright.config.ts",
     "android:build": "powershell -NoProfile -File scripts/build-android.ps1",
     "test:ai": "tsx scripts/regression/deepseek-prompt.test.ts",
-    "test:ni": "tsx scripts/regression/ni-course-cases.test.ts"
+    "test:ni": "tsx scripts/regression/ni-course-cases.test.ts && tsx scripts/regression/ni-manual-audit.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",

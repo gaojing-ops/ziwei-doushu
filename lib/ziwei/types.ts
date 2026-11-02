@@ -25,6 +25,8 @@ export interface BirthInfo {
 }
 
 export interface LunarInfo {
+  /** Actual calendar date, distinct from the logical 安星 month/day. */
+  calendarDate?: { year: number; month: number; day: number; isLeapMonth: boolean };
   lunarYear: number;
   lunarMonth: number;    // positive = normal, negative = leap month
   lunarDay: number;

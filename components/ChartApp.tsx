@@ -4,6 +4,7 @@ import BirthForm, { type BirthFormState } from '@/components/BirthForm';
 import ChartBoard from '@/components/ChartBoard';
 import InsightPanel from '@/components/InsightPanel';
 import TimeNav, { type TimeView } from '@/components/TimeNav';
+import RuleSourceNotice from '@/components/RuleSourceNotice';
 import { generateChart } from '@/lib/ziwei/algorithm';
 import type { BirthInfo, ZiweiChart, Palace } from '@/lib/ziwei/types';
 import '@/app/chart/chart.css';
@@ -45,6 +46,7 @@ export default function ChartApp({ localOnly = false, renderInsights }: {
           <br />
           {localOnly ? '排盘在本机完成；使用 AI 解读时才发送必要的命盘资料。' : '（本页为引擎 Demo，完整商业版界面不在开源范围；排盘内核完全开放。）'}
         </p>
+        <RuleSourceNotice />
         <BirthForm initialData={formDraft} onFormSave={setFormDraft} onSubmit={(info: BirthInfo) => {
           setChart(generateChart(info));
           if (localOnly) window.history.pushState({ ziweiChart: true }, '', window.location.href);
@@ -85,6 +87,7 @@ export default function ChartApp({ localOnly = false, renderInsights }: {
         </p>
       )}
 
+      <RuleSourceNotice />
       <TimeNav
         chart={chart}
         view={view}

@@ -6,6 +6,7 @@ import { BRANCHES, STEMS } from '@/lib/ziwei/constants';
 import PalaceCell from './PalaceCell';
 import { type TimeView } from './TimeNav';
 import { niFortune } from '@/lib/ziwei/ni-school';
+import { niStarProvenance } from '@/lib/ziwei/ni-manual';
 
 interface ChartBoardProps {
   chart: ZiweiChart;
@@ -155,7 +156,9 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
           })()}
 
           <div className="chart-center-lunar">
-            农历 {chart.lunarInfo.lunarYear}年<br />{chart.lunarInfo.isLeapMonth ? '闰' : ''}{chart.lunarInfo.lunarMonth}月{chart.lunarInfo.lunarDay}日
+            农历 {chart.lunarInfo.calendarDate?.year ?? chart.lunarInfo.lunarYear}年<br />
+            {(chart.lunarInfo.calendarDate?.isLeapMonth ?? chart.lunarInfo.isLeapMonth) ? '闰' : ''}{chart.lunarInfo.calendarDate?.month ?? chart.lunarInfo.lunarMonth}月{chart.lunarInfo.calendarDate?.day ?? chart.lunarInfo.lunarDay}日
+            {chart.lunarInfo.calendarDate?.isLeapMonth && <div>安星用{chart.lunarInfo.lunarMonth}月，日序仍为{chart.lunarInfo.lunarDay}<br />（月序规则，不是改生日）</div>}
           </div>
           <p className="chart-center-hint">{selectedBranch !== null ? `已选${palaceMap[selectedBranch].name} · 详情见下方` : timeView === 'liunian' ? '点按宫位\n查看本宫与对宫' : '点按宫位\n查看星曜与三方四正'}</p>
         </motion.div>
@@ -229,6 +232,15 @@ export default function ChartBoard({ chart, view: timeView, liunianYear, onStarS
                 {star.siHua && <small> · 生年化{star.siHua}</small>}
               </span>)}
             </div>
+            <details className="star-rule-sources"><summary>本宫星曜的规则来源</summary>
+              {palace.stars.map(star => {
+                const source = niStarProvenance(star.name, palace.branch);
+                return <div key={star.name}><strong>{star.name}</strong>：{source.placement}
+                  <p><a href={source.placementUrl} target="_blank" rel="noreferrer">{source.page ? `教材 PDF 第${source.page}页（书内第${source.page - 4}页）` : '查看上游算法来源'}</a></p>
+                  <p>亮度：{source.brightness}。{source.page && <a href={source.brightnessUrl} target="_blank" rel="noreferrer">庙旺表出处</a>}</p>
+                </div>;
+              })}
+            </details>
           </>;
         })() : <><h3>宫位详情</h3><p>点按上方任一宫位，在这里查看完整星曜、亮度和四化。</p></>}
       </section>

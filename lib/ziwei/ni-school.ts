@@ -1,8 +1,8 @@
 import type { ZiweiChart } from './types';
 
-/** Explicit course profile; evidence and unresolved details: docs/ni-school-audit.md. */
+/** Explicit course profile; evidence and unresolved details: docs/ni-school-audit-1.3.md. */
 export const NI_PROFILE = {
-  id: 'ni-tianji-v1', lateZishi: 'current-day', leapMonth: 'next-month',
+  id: 'ni-tianji-v2', lateZishi: 'current-day', leapMonth: 'next-month',
   fourTransformations: 'natal-fixed',
 } as const;
 const mod12 = (n: number) => ((n % 12) + 12) % 12;

@@ -37,5 +37,14 @@ export function evidenceWarning(text: string, evidence: TeachingEvidence[]): str
   const cited = [...text.matchAll(/\bTJ-\d{4}\b/g)].map(m => m[0]);
   if (cited.some(id => !evidence.some(e => e.id === id))) return '回答含未提供的教学编号，依据校验未通过；请核对下方原文，不采用该项结论。';
   if (!cited.length) return '回答没有引用本次教学编号，尚不能核对是否符合课程；请参照下方依据。';
+  // A real ID must not make an invented direct quotation look authentic.
+  const normalize = (s: string) => s.replace(/[\s，。！？、：；“”「」『』,.!?;:'"（）()]/g, '');
+  for (const match of text.matchAll(/[「『“"]([^」』”"\n]{4,})[」』”"]/g)) {
+    const before = text.slice(Math.max(0, (match.index ?? 0) - 35), match.index);
+    const after = text.slice((match.index ?? 0) + match[0].length, (match.index ?? 0) + match[0].length + 35);
+    if (!/倪|老师|原话|课程|引文|教学/.test(before) && !/TJ-\d{4}/.test(after)) continue;
+    const quotation = normalize(match[1]);
+    if (!evidence.some(e => normalize(e.quote).includes(quotation))) return '回答中的直接引文与本次课程原文不符，原文校验未通过；不能视为倪老师原话。';
+  }
   return '';
 }

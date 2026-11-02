@@ -47,7 +47,7 @@ async function nativeMock(page: Page, configured = true, scenario = 'success') {
                 if (!pending.has(request.requestId)) return;
                 pending.delete(request.requestId);
                 const sourceId = /\"id\":\"(TJ-\d{4})\"/.exec(request.messages[0].content)?.[1];
-                const finalText = state.scenario === 'uncited' ? '没有课程引用的回答' : state.scenario === 'forged' ? '虚构引用 [TJ-9999]' : `第一段中文，第二段 [${sourceId}]`;
+                const finalText = state.scenario === 'uncited' ? '没有课程引用的回答' : state.scenario === 'forged' ? '虚构引用 [TJ-9999]' : state.scenario === 'fakequote' ? `倪老师说：“保证今年必定获得巨额横财。” [${sourceId}]` : `第一段中文，第二段 [${sourceId}]`;
                 resolve({ text: finalText, finishReason: 'stop', promptTokens: 100, completionTokens: 20 });
               }, 300);
             });
@@ -164,11 +164,11 @@ for (const [code, text] of [['AUTH', '密钥无效'], ['BALANCE', '余额不足'
   });
 }
 
-for (const scenario of ['uncited', 'forged']) {
+for (const scenario of ['uncited', 'forged', 'fakequote']) {
   test(`${scenario} teaching answer is flagged and excluded from follow-up history`, async ({ page }) => {
     await nativeMock(page, true, scenario); await makeChart(page);
     await page.getByRole('button', { name: '开始解读', exact: true }).tap();
-    await expect(page.getByRole('alert')).toContainText(scenario === 'forged' ? '依据校验未通过' : '没有引用');
+    await expect(page.getByRole('alert')).toContainText(scenario === 'forged' ? '依据校验未通过' : scenario === 'fakequote' ? '原文校验未通过' : '没有引用');
     await page.getByText(/本次教学依据/).click();
     await expect(page.getByRole('link', { name: /原课程 P5/ })).toBeVisible();
     await page.getByLabel('追问内容').fill('请补充可核对的依据');

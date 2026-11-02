@@ -145,6 +145,7 @@ export function DeepSeekPanel({ context, settings, onSettings }: { context: Char
     <div className="ai-conversation" aria-live="polite" aria-busy={busy}>
       {turns.map((turn, index) => <article key={index} className={`ai-turn ai-turn-${turn.role}`}>
         <small>{turn.role === 'user' ? '你的问题' : 'DeepSeek'}{turn.role === 'assistant' && !turn.complete ? ' · 未完成' : ''}</small>
+        {turn.role === 'assistant' && <p className="ai-help">以下为 AI 生成的解释，不是倪老师原话。编号仅供查出处，不能证明解读成立。</p>}
         <Answer text={turn.content || '正在等待回答…'} />
         {turn.warning && <p role="alert" className="ai-error">{turn.warning}</p>}
         {turn.evidence && <details className="teaching-evidence"><summary>本次教学依据（{turn.evidence.length} 条）</summary>

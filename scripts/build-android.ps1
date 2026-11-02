@@ -20,7 +20,7 @@ $sdkProperty = -join ($sdkProperty.ToCharArray() | ForEach-Object {
 [IO.File]::WriteAllText((Join-Path $projectRoot 'android\local.properties'), $sdkProperty + "`n", [Text.UTF8Encoding]::new($false))
 # Remove only these generated resource directories, after checking workspace bounds
 # and reparse points. Stale hashed bundles must not be carried into a new APK.
-foreach ($generatedRelative in @('mobile\dist', 'android\app\src\main\assets\public')) {
+foreach ($generatedRelative in @('mobile\dist', 'android\app\src\main\assets\public', 'android\app\build')) {
     $generatedPath = [IO.Path]::GetFullPath((Join-Path $projectRoot $generatedRelative))
     $projectPrefix = [IO.Path]::GetFullPath($projectRoot).TrimEnd('\') + '\'
     if (-not $generatedPath.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'Generated asset path is outside this project.' }
@@ -49,12 +49,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Native SSE regression tests failed.' }
     $outputDir = Join-Path $projectRoot 'outputs'
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
-    $apk = Join-Path $outputDir 'Ziwei-DeepSeek-1.2.apk'
+    $apk = Join-Path $outputDir 'Ziwei-DeepSeek-1.3.apk'
     Copy-Item -LiteralPath (Join-Path $projectRoot 'android\app\build\outputs\apk\debug\app-debug.apk') -Destination $apk -Force
     $stream = [IO.File]::OpenRead($apk)
     $hasher = [Security.Cryptography.SHA256]::Create()
     try { $sha256 = [BitConverter]::ToString($hasher.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() }
     finally { $hasher.Dispose(); $stream.Dispose() }
-    [IO.File]::WriteAllText(($apk + '.sha256'), $sha256 + '  Ziwei-DeepSeek-1.2.apk' + "`n", [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText(($apk + '.sha256'), $sha256 + '  Ziwei-DeepSeek-1.3.apk' + "`n", [Text.UTF8Encoding]::new($false))
     Write-Output ('APK ready: ' + $apk)
 } finally { Pop-Location }

@@ -7,6 +7,7 @@ const seen = new Set();
 const sections = [
   '紫微命盘 · 离线自用版\nUpstream: https://github.com/Renhuai123/ziwei-doushu',
   fs.readFileSync(path.join(root, 'LICENSE'), 'utf8'),
+  '教材规则事实转录：倪海厦《天机道》20100907 非打印第一版。来源镜像 Shanemen/hantang-nihaixia（27b8ce5b942ca166610ac5e38b9eac0afa913ff9）。仅提取安星位置等规则事实；教材全文、图表排版及原著权利归原权利人，未将完整 PDF 打包进 APK。规则事实转录不冒充官方认证或逐段原视频核验。',
   '倪海厦《天纪》教学短引文：来源 Renhuai123/nihai-tianji-corpus（462faa4）及本仓库 docs/tianji-ziwei/。新增本地检索索引，排除存疑和勘误条目；仅供非商业学习研究，不表示官方认可。',
   fs.readFileSync(path.join(root, 'docs/tianji-ziwei/LICENSE.md'), 'utf8'),
 ];

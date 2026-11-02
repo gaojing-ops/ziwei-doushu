@@ -35,6 +35,8 @@ for (const c of cases) {
     assert.equal(evidenceWarning(`教学依据 [${evidence[0].id}]`, evidence), '');
     assert(evidenceWarning('教学依据 [TJ-9999]', evidence));
     assert(evidenceWarning('无依据自由发挥', evidence));
+    assert(evidenceWarning(`倪老师说：“保证你今年必定获得巨额横财。” [${evidence[0].id}]`, evidence));
+    assert.equal(evidenceWarning(`教学原话：“${evidence[0].quote}” [${evidence[0].id}]`, evidence), '');
   }
   console.log(`✓ 课程案例 ${c.id}: 命宫、${Object.keys(c.expected.stars).length} 项星位及小流年`);
 }
@@ -54,5 +56,5 @@ assert.equal(niAnnualBranch(1, 'female', 40), 4);
 assert.equal(niAnnualBranch(1, 'male', 2), 8);
 assert.equal(niAnnualBranch(1, 'female', 2), 6);
 assert.equal(niAnnualBranch(1, 'female', 0), null);
-assert.throws(() => generateChart({ year: 1952, month: 7, day: 21, hour: 6, gender: 'female' }), /闰月三十/);
+assert.equal(generateChart({ year: 1952, month: 7, day: 21, hour: 6, gender: 'female' }).lunarInfo.lunarDay, 30);
 console.log('✓ 闰月全月归下月、男顺女逆、起限前范围、教学检索及伪造引用拦截通过');

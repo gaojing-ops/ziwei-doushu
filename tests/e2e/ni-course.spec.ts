@@ -33,7 +33,7 @@ test('course Xin-Chou female case: fixed transformations, Kui at Wu and selected
   await page.screenshot({ path: testInfo.outputPath('ni-course-female-40.png'), fullPage: true });
 });
 
-test('unsupported leap-day substitution is explained without silently changing the birth day', async ({ page }) => {
+test('exceptional leap day retains real birthday and logical day 30 with accessible sources', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/chart');
@@ -41,7 +41,12 @@ test('unsupported leap-day substitution is explained without silently changing t
     await page.getByLabel(field, { exact: true }).selectOption(value);
   }
   await page.getByRole('button', { name: /立即起盘/ }).tap();
-  await expect(page.locator('form').getByRole('alert')).toContainText('闰月三十');
-  await expect(page.getByRole('heading', { name: '紫微斗数排盘' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '命盘总览' })).toBeVisible();
+  await expect(page.locator('.chart-center')).toContainText('闰5月30日');
+  await expect(page.locator('.chart-center')).toContainText('安星用6月，日序仍为30');
+  await page.getByRole('button', { name: /^命宫 / }).tap();
+  await page.getByText('本宫星曜的规则来源', { exact: true }).click();
+  await expect(page.locator('.star-rule-sources')).toContainText('教材表格口径');
+  await expect(page.locator('.star-rule-sources').getByRole('link').first()).toHaveAttribute('href', /27b8ce5b942ca166610ac5e38b9eac0afa913ff9/);
   expect(errors).toEqual([]);
 });

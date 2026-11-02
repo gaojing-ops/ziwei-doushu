@@ -17,6 +17,8 @@
 
 原有排盘算法及知识内容主要继承自上游，本版本不将其声明为全新原创。新增、修改的代码沿用 MIT 许可。
 
+1.3 追加：对照《天机道（天纪系列）》20100907 非打印第一版的安星事实、庙旺表及 39 幅例图，修复特殊闰月日序、解神重复及表格口径，加入逐星出处、冲突标注及直接引文校验。教材来自 [Shanemen/hantang-nihaixia 固定镜像 27b8ce5](https://github.com/Shanemen/hantang-nihaixia/blob/27b8ce5b942ca166610ac5e38b9eac0afa913ff9/%E5%80%AA%E6%B5%B7%E5%8E%A6/%E5%A4%A9%E7%BA%AA/%E5%A4%A9%E6%9C%BA%E9%81%93-%E6%95%99%E6%9D%90.pdf)，不是官方认证来源。教材著作及排版权利归原权利人，本项目未取得将整本教材重新授权的依据，不打包整本 PDF；规则事实与有限位置转录用于非商业学习核对，没有把镜像许可套用到原教材。例图月份留空者的参考输入为软件核对而推导，并非已查实完整真实生日。详见 [1.3 核对记录](docs/ni-school-audit-1.3.md)。
+
 ## 不同内容的许可
 
 | 内容 | 来源与许可 |
@@ -24,6 +26,7 @@
 | 仓库代码 | [LICENSE](LICENSE)，MIT。完整保留原版权声明。 |
 | 上游 Release 中的 v3.0/v4.0 大型数据集 | [DATASET-LICENSE](DATASET-LICENSE)，按上游规定适用 CC BY 4.0 及署名要求；本 Release 不重新分发这些数据集，APK 不附带这些大型数据集。 |
 | `docs/tianji-ziwei/` 课程短引文整理 | [该目录许可](docs/tianji-ziwei/LICENSE.md)，CC BY-NC-SA 4.0；课程著作权归原权利人。不能因代码采用 MIT 而将该语料视为 MIT 或任意商用。 |
+| `lib/ziwei/ni-manual-data.json`、`docs/ni-manual-cases.json` 的教材事实／位置转录 | 出处为上述《天机道》教材固定镜像，原教材权利归原权利人；不是整本教材或其排版的重新授权，不冒充 MIT 或 CC BY-NC-SA 教材。 |
 | 古籍原文 | 按上游说明属于公有领域；现代课程、整理及其他内容仍须分别核对权利。 |
 | 第三方运行时依赖 | 各自许可；APK 中可通过“关于 → 查看开源许可”查看已打包的前端依赖声明。Capacitor、AndroidX 等原生依赖遵循其各自 MIT / Apache-2.0 等许可。 |
 

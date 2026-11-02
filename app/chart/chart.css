@@ -52,6 +52,11 @@
 .palace-body-marker { color: var(--chart-lucky); }
 .palace-age, .palace-ganzhi { color: var(--t-text2); font-size: 11px; white-space: nowrap; line-height: 1.6; }
 .palace-fortune-marker { font-size: 11px; color: var(--t-gold); font-weight: 650; }
+.rule-source-notice, .star-rule-sources { margin: 16px 0; padding: 12px; border: 1px solid var(--t-border); border-radius: 10px; color: var(--t-text2); font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.rule-source-notice summary, .star-rule-sources summary { min-height: 44px; cursor: pointer; color: var(--t-gold); }
+.rule-source-notice p, .star-rule-sources p { margin: 8px 0; }
+.rule-source-notice a, .star-rule-sources a { display: inline-block; min-height: 44px; color: var(--t-gold); }
+.star-rule-sources > div { padding: 8px 0; border-top: 1px solid var(--t-border); }
 .palace-age { font-variant-numeric: tabular-nums; }
 .palace-ganzhi { margin-top: 2px; }
 .palace-major-stars { display: flex; flex-direction: column; gap: 4px; margin: 7px 0; min-height: 24px; }
